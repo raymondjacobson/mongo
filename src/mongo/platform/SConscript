@@ -4,6 +4,7 @@ Import("env")
 
 env.Library('platform', [
         'backtrace.cpp',
+        'decimal128.cpp',
         'posix_fadvise.cpp',
         'process_id.cpp',
         'random.cpp',
@@ -19,5 +20,7 @@ env.CppUnitTest('random_test', 'random_test.cpp', LIBDEPS=['platform'])
 
 env = env.Clone()
 # env.InjectThirdPartyIncludePaths(libraries=['intel_decimal128'])
-env.CppUnitTest('intel_decimal128_test', 'intel_decimal128_test.cpp',
-	LIBDEPS=['$BUILD_DIR/third_party/shim_intel_decimal128'])
+env.CppUnitTest('decimal128_test', 'decimal128_test.cpp',
+	LIBPATH=['/Users/raymondjacobson/playground/IntelRDFPMathLib20U1/LIBRARY/'],
+	LIBS=['bid'],)
+	# LIBDEPS=['$BUILD_DIR/third_party/shim_intel_decimal128'])
