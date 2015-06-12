@@ -27,12 +27,10 @@
 
 #pragma once
 
-#include "third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h"
-#include "third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h"
-// #include "third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_trans.h"
-
-#include <string>
 #include <iostream>
+#include <string>
+#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
+#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
 
 namespace mongo {
 // Wrapper class for Intel Decimal128 data type. Sample usage:
@@ -54,24 +52,28 @@ public:
 	~Decimal128();
 
 	// These functions get and set the two 64 bit arrays storing the
-	// decimal128 value, which is useful for testing as well as debugging.
+	// decimal128 value, which is useful for direct manipulation and testing
 	const unsigned long long* getValue() const;
 	void setValue(unsigned long long* ull);
 	
-	// Conversion to other type wrappers
+	// Conversion to other types
 	int toInt(int roundMode = 0);
 	long toLong(int roundMode = 0);
+	// This function constructs a decimal128 value from a double
+	// and fixes the precision to 15, which is a binary double's
+	// max guaranteed decimal precision.
 	double toDouble(int roundMode = 0);
 	std::string toString();
 
-	// Mathematical operations wrappers
+	// Mathematical operations
 	Decimal128 add(const Decimal128& dec128, int roundMode=0);
 	Decimal128 subtract(const Decimal128& dec128, int roundMode=0);
 	Decimal128 multiply(const Decimal128& dec128, int roundMode=0);
 	Decimal128 divide(const Decimal128& dec128, int roundMode=0);
-	Decimal128 quantize(const Decimal128& reference);
+	// This function quantizes the current decimal given a quantum reference
+	Decimal128 quantize(const Decimal128& reference, int roundMode=0);
 
-	// Comparison wrappers
+	// Comparison operations
 	bool compareEqual(const Decimal128& dec128);
 	bool compareNotEqual(const Decimal128& dec128);
 	bool compareGreater(const Decimal128& dec128);
@@ -85,4 +87,5 @@ private:
 	// Flags are passed to and modified in library calls
 	unsigned int _idec_signaling_flags;
 };
+
 }

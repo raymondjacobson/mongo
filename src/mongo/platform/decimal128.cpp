@@ -29,8 +29,12 @@
 
 #include "mongo/platform/decimal128.h"
 
+#include <math.h>
 #include <memory>
 #include <string>
+#include <iostream>
+
+#include "mongo/platform/endian.h"
 
 namespace mongo {
 
@@ -60,11 +64,66 @@ namespace mongo {
 		_value[0] = dec128.w[0];
 		_value[1] = dec128.w[1];
 	}
+	// This function takes a double and constructs a Decimal128 object
+	// given a roundMode with a fixed precision of 15. Doubles can only
+	// properly represent a decimal precision of 15-17 digits.
+	// The general idea is to quantize the direct double->dec128 conversion
+	// with a quantum of 1E(-15 +/- base10 exponent equivalent of the double).
+	// To do this, we find the smallest (abs value) base 10 exponent greater
+	// than the double's base 2 exp and shift the quantizer's exp accordingly.
 	Decimal128::Decimal128(double d, int roundMode) {
+	// Determine system's endian ordering in order to construct decimal
+	// 128 values directly (inexpensively)
+#if MONGO_CONFIG_BYTE_ORDER == 1234
+		int HIGH_64=1;
+		int LOW_64=0;
+#else
+		int HIGH_64=0;
+		int LOW_64=1;
+#endif
 		BID_UINT128 dec128;
 		dec128 = binary64_to_bid128(d, roundMode, &_idec_signaling_flags);
-		_value[0] = dec128.w[0];
-		_value[1] = dec128.w[1];
+		BID_UINT128 quantizerReference;
+		// The quantizer starts at 1E-15 because a binary float's decimal
+		// precision is necessarily >= 15
+		quantizerReference.w[HIGH_64] = 0x3022000000000000;
+		quantizerReference.w[LOW_64] = 0x0000000000000001;
+		int exp;
+		bool posExp = true;
+		frexp(d, &exp); // Get the exponent from the incoming double
+		if (exp < 0) {
+			exp *= -1;
+			posExp = false;
+		}
+		// Convert base 2 to base 10, ex: 2^7=128, 10^(7*.3)=125.89...
+		// If, by chance, 10^(n*.3) < 2^n, we're at most 1 off, so add 1
+		int base10Exp = (exp*3)/10;
+		if (pow(10, base10Exp+1) < pow(2, exp)) {
+			base10Exp += 1;
+		}
+		// Additionally increase the base10Exp by 1 because 10 = 10^1
+		// whereas in the negative case 0.1 = 10^-2
+		if (posExp) base10Exp += 1;
+		BID_UINT128 base10ExpInBID; // Start with the representation of 1
+		base10ExpInBID.w[HIGH_64] = 0x3040000000000000;
+		base10ExpInBID.w[LOW_64] = 0x0000000000000001;
+		// Scale the exponent by the base 10 exponent. This is necessary to keep
+		// The precision of the quantizer reference correct. Different cohorts
+		// behave differently as a quantizer reference.
+		base10ExpInBID = bid128_scalbn(base10ExpInBID, base10Exp, 
+			roundMode, &_idec_signaling_flags);
+		// Multiply the quantizer by the base 10 exponent for the positive case
+		// and divide for the negative one
+		if (posExp) {
+			quantizerReference = bid128_mul(quantizerReference, base10ExpInBID,
+				roundMode, &_idec_signaling_flags);
+		} else {
+			quantizerReference = bid128_div(quantizerReference, base10ExpInBID,
+				roundMode, &_idec_signaling_flags);
+		}
+		dec128 = bid128_quantize(dec128, quantizerReference, roundMode, &_idec_signaling_flags);
+		_value[LOW_64] = dec128.w[LOW_64];
+		_value[HIGH_64] = dec128.w[HIGH_64];
 	}
 	Decimal128::Decimal128(std::string s) {
 		std::unique_ptr<char[]> charInput(new char[s.size() + 1]);
@@ -151,6 +210,14 @@ namespace mongo {
 		current = bid128_div(current, divisor, roundMode, &_idec_signaling_flags);
 		Decimal128 result;
 		result.setValue(current.w);
+		return result;
+	}
+	Decimal128 Decimal128::quantize(const Decimal128& reference, int roundMode) {
+		BID_UINT128 current = Decimal128ToLibraryType(_value);
+		BID_UINT128 q = Decimal128ToLibraryType(reference.getValue());
+		BID_UINT128 quantizedResult = bid128_quantize(current, q, roundMode, &_idec_signaling_flags);
+		Decimal128 result;
+		result.setValue(quantizedResult.w);
 		return result;
 	}
 	bool Decimal128::compareEqual(const Decimal128& dec128) {
