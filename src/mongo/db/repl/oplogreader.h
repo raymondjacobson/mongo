@@ -38,11 +38,16 @@
 #include "mongo/util/net/hostandport.h"
 
 namespace mongo {
+
+    class OperationContext;
+
 namespace repl {
 
-    extern const BSONObj reverseNaturalObj; // {"$natural": -1 }
-
     class ReplicationCoordinator;
+    class OpTime;
+
+    // {"$natural": -1 }
+    extern const BSONObj reverseNaturalObj;
 
     /**
      * Authenticates conn using the server's cluster-membership credentials.
@@ -141,8 +146,8 @@ namespace repl {
          * sync source blacklist.
          * This function may throw DB exceptions.
          */
-        void connectToSyncSource(OperationContext* txn, 
-                                 Timestamp lastOpTimeFetched,
+        void connectToSyncSource(OperationContext* txn,
+                                 const OpTime& lastOpTimeFetched,
                                  ReplicationCoordinator* replCoord);
     };
 

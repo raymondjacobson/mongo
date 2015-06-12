@@ -92,7 +92,7 @@ namespace {
                 invariant(client);
 
                 // Make the client stable
-                boost::unique_lock<Client> clientLock(*client);
+                stdx::lock_guard<Client> lk(*client);
                 const OperationContext* txn = client->getOperationContext();
                 if (!txn) continue;
 
@@ -101,8 +101,8 @@ namespace {
 
                 ss << "<tr><td>" << client->desc() << "</td>";
 
-                tablecell(ss, curOp->opNum());
-                tablecell(ss, curOp->active());
+                tablecell(ss, txn->getOpID());
+                tablecell(ss, true);
 
                 // LockState
                 {
@@ -115,12 +115,7 @@ namespace {
                     tablecell(ss, lockerInfoBuilder.obj());
                 }
 
-                if (curOp->active()) {
-                    tablecell(ss, curOp->elapsedSeconds());
-                }
-                else {
-                    tablecell(ss, "");
-                }
+                tablecell(ss, curOp->elapsedSeconds());
 
                 tablecell(ss, curOp->getOp());
                 tablecell(ss, html::escape(curOp->getNS()));
@@ -205,12 +200,14 @@ namespace {
                 BSONObjBuilder b;
 
                 // Make the client stable
-                boost::unique_lock<Client> clientLock(*client);
+                stdx::lock_guard<Client> lk(*client);
 
                 client->reportState(b);
 
                 const OperationContext* txn = client->getOperationContext();
+                b.appendBool("active", static_cast<bool>(txn));
                 if (txn) {
+                    b.append("opid", txn->getOpID());
 
                     // CurOp
                     if (CurOp::get(txn)) {

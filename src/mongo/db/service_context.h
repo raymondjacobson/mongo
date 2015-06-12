@@ -197,10 +197,7 @@ namespace mongo {
          */
         virtual StorageFactoriesIterator* makeStorageFactoriesIterator() = 0;
 
-        /**
-         * Set the storage engine.  The engine must have been registered via registerStorageEngine.
-         */
-        virtual void setGlobalStorageEngine(const std::string& name) = 0;
+        virtual void initializeGlobalStorageEngine() = 0;
 
         /**
          * Shuts down storage engine cleanly and releases any locks on mongod.lock.
@@ -254,9 +251,9 @@ namespace mongo {
         virtual void registerKillOpListener(KillOpListenerInterface* listener) = 0;
 
         /**
-         * Returns a new OperationContext.  Caller owns pointer.
+         * Returns a new OperationContext.
          */
-        virtual OperationContext* newOpCtx() = 0;
+        virtual std::unique_ptr<OperationContext> newOpCtx() = 0;
 
         //
         // Global OpObserver.
