@@ -33,59 +33,72 @@
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
 
 namespace mongo {
-// Wrapper class for Intel Decimal128 data type. Sample usage:
-//     Decimal128 d("+10.0");
-//     std::cout << d.toString << std::endl;
-// Round modes:
-// 	   0 - Round ties to even (default)
-//     1 - Round toward negative/downward
-//     2 - Round toward positive/upward
-//     3 - Round toward zero
-//     4 - Round ties to away
+
+/**
+ * Wrapper class for Intel Decimal128 data type. Sample usage:
+ *     Decimal128 d("+10.0");
+ *     std::cout << d.toString << std::endl;
+ */
 class Decimal128 {
 public:
-	Decimal128();
-	Decimal128(int i);
-	Decimal128(long l);
-	Decimal128(double d, int roundMode = 0);
-	Decimal128(std::string s);
-	~Decimal128();
+  enum RoundingModes {
+    kRoundTiesToEven = 0,
+    kRoundTowardNegative = 1,
+    kRoundTowardPositive = 2,
+    kRoundTowardZero = 3,
+    kRoundTiesAway = 4
+  };
 
-	// These functions get and set the two 64 bit arrays storing the
-	// decimal128 value, which is useful for direct manipulation and testing
-	const unsigned long long* getValue() const;
-	void setValue(unsigned long long* ull);
-	
-	// Conversion to other types
-	int toInt(int roundMode = 0);
-	long toLong(int roundMode = 0);
-	// This function constructs a decimal128 value from a double
-	// and fixes the precision to 15, which is a binary double's
-	// max guaranteed decimal precision.
-	double toDouble(int roundMode = 0);
-	std::string toString();
+  Decimal128();
+  Decimal128(int i);
+  Decimal128(long l);
+  Decimal128(double d, Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  Decimal128(std::string s);
+  ~Decimal128();
 
-	// Mathematical operations
-	Decimal128 add(const Decimal128& dec128, int roundMode=0);
-	Decimal128 subtract(const Decimal128& dec128, int roundMode=0);
-	Decimal128 multiply(const Decimal128& dec128, int roundMode=0);
-	Decimal128 divide(const Decimal128& dec128, int roundMode=0);
-	// This function quantizes the current decimal given a quantum reference
-	Decimal128 quantize(const Decimal128& reference, int roundMode=0);
+  /**
+   * These functions get and set the two 64 bit arrays storing the
+   * decimal128 value, which is useful for direct manipulation and testing
+   */
+  const unsigned long long *getValue() const;
+  void setValue(unsigned long long *ull);
 
-	// Comparison operations
-	bool compareEqual(const Decimal128& dec128);
-	bool compareNotEqual(const Decimal128& dec128);
-	bool compareGreater(const Decimal128& dec128);
-	bool compareGreaterEqual(const Decimal128& dec128);
-	bool compareLess(const Decimal128& dec128);
-	bool compareLessEqual(const Decimal128& dec128);
+  // Conversion to other types
+  int toInt(Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  long toLong(Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  /**
+   * This function constructs a decimal128 value from a double
+   * and fixes the precision to 15, which is a binary double's
+   * max guaranteed decimal precision.
+   */
+  double toDouble(Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  std::string toString();
+
+  // Mathematical operations
+  Decimal128 add(const Decimal128 &dec128,
+                 Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  Decimal128 subtract(const Decimal128 &dec128,
+                      Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  Decimal128 multiply(const Decimal128 &dec128,
+                      Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  Decimal128 divide(const Decimal128 &dec128,
+                    Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+  // This function quantizes the current decimal given a quantum reference
+  Decimal128 quantize(const Decimal128 &reference,
+                      Decimal128::RoundingModes roundMode = kRoundTiesToEven);
+
+  // Comparison operations
+  bool compareEqual(const Decimal128 &dec128);
+  bool compareNotEqual(const Decimal128 &dec128);
+  bool compareGreater(const Decimal128 &dec128);
+  bool compareGreaterEqual(const Decimal128 &dec128);
+  bool compareLess(const Decimal128 &dec128);
+  bool compareLessEqual(const Decimal128 &dec128);
 
 private:
-	unsigned long long _value[2];
-	// IDEC signaling flags are used for signaling operations.
-	// Flags are passed to and modified in library calls
-	unsigned int _idec_signaling_flags;
+  unsigned long long _value[2];
+  // IDEC signaling flags are used for signaling operations.
+  // Flags are passed to and modified in library calls
+  unsigned int _idec_signaling_flags;
 };
-
 }
