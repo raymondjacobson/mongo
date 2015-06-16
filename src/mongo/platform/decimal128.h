@@ -130,6 +130,12 @@ public:
     std::pair<double, bool> isAndToDouble(RoundingMode roundMode = kRoundTiesToEven);
 
     /**
+      * This set of functions check whether a Decimal128 is NaN or +/- Inf
+      */
+    bool isNaN();
+    bool isInfinite();
+
+    /**
       * This set of mathematical operation functions takes a single Decimal128 and a rounding
       * mode parameter and performs the operation to the calling Decimal128. The calls are
       * commutative in that a.add(b) is equivalent to b.add(a). When operations are performed
