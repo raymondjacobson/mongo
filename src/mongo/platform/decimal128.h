@@ -101,10 +101,12 @@ public:
     ~Decimal128();
 
     /**
-     * This function gets the inner Decimal128Value struct storing the
+     * These functions get the inner Decimal128Value struct storing the
      * decimal128 value, which is useful for direct manipulation and testing.
+     * Const cast away for the mutable version of the function.
      */
-    const Decimal128Value getValue() const;
+    const Decimal128Value& getValue() const;
+    Decimal128Value& getValue();
 
     /**
       * This set of functions converts a Decimal128 to a certain numeric type with a
