@@ -133,8 +133,12 @@ Decimal128::Decimal128(std::string s, RoundingMode roundMode) {
 Decimal128::~Decimal128() {
 }
 
-const Decimal128::Decimal128Value Decimal128::getValue() const {
+const Decimal128::Decimal128Value& Decimal128::getValue() const {
     return _value;
+}
+Decimal128::Decimal128Value& Decimal128::getValue() {
+    return const_cast<Decimal128::Decimal128Value&>(
+        static_cast<const Decimal128::Decimal128&>(*this).getValue());
 }
 
 int32_t Decimal128::toInt(RoundingMode roundMode) {
