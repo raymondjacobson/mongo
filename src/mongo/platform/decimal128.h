@@ -134,6 +134,7 @@ public:
       */
     bool isNaN();
     bool isInfinite();
+    bool isNegative();
 
     /**
       * This set of mathematical operation functions takes a single Decimal128 and a rounding

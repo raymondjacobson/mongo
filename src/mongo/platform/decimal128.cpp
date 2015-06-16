@@ -247,6 +247,10 @@ bool Decimal128::isInfinite() {
     return bid128_isInf(Decimal128ToLibraryType(_value));
 }
 
+bool Decimal128::isNegative() {
+    return bid128_isSigned(Decimal128ToLibraryType(_value));
+}
+
 Decimal128 Decimal128::add(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 addend = Decimal128ToLibraryType(dec128.getValue());
