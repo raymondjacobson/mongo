@@ -59,27 +59,24 @@ BID_UINT128 Decimal128ToLibraryType(Decimal128::Decimal128Value value) {
     return dec128;
 }
 
-Decimal128::Decimal128() {
-    _value.low64 = 0;
-    _value.high64 = 0;
+Decimal128::Decimal128Value::Decimal128Value() : high64(0), low64(0) {
 }
-Decimal128::Decimal128(Decimal128::Decimal128Value value) {
-    _value.low64 = value.low64;
-    _value.high64 = value.high64;
+Decimal128::Decimal128Value::Decimal128Value(const Decimal128Value& dval)
+    : high64(dval.high64), low64(dval.low64) {
 }
-Decimal128::Decimal128(int32_t i) {
-    BID_UINT128 dec128;
-    dec128 = bid128_from_int32(i);
-    _value.low64 = dec128.w[LOW_64];
-    _value.high64 = dec128.w[HIGH_64];
+Decimal128::Decimal128Value::Decimal128Value(const uint64_t dval[2])
+    : high64(dval[HIGH_64]), low64(dval[LOW_64]) {
 }
-Decimal128::Decimal128(int64_t l) {
-    BID_UINT128 dec128;
-    dec128 = bid128_from_int64(l);
-    _value.low64 = dec128.w[LOW_64];
-    _value.high64 = dec128.w[HIGH_64];
+
+Decimal128::Decimal128() : _value() {
 }
-Decimal128::Decimal128(double d, RoundingModes roundMode) {
+Decimal128::Decimal128(Decimal128::Decimal128Value value) : _value(value) {
+}
+Decimal128::Decimal128(int32_t i) : _value(Decimal128Value(bid128_from_int32(i).w)) {
+}
+Decimal128::Decimal128(int64_t l) : _value(Decimal128Value(bid128_from_int64(l).w)) {
+}
+Decimal128::Decimal128(double d, RoundingMode roundMode) {
     BID_UINT128 dec128;
     uint32_t idec_signaling_flags = 0;
     dec128 = binary64_to_bid128(d, roundMode, &idec_signaling_flags);
@@ -122,18 +119,16 @@ Decimal128::Decimal128(double d, RoundingModes roundMode) {
             bid128_div(quantizerReference, base10ExpInBID, roundMode, &idec_signaling_flags);
     }
     dec128 = bid128_quantize(dec128, quantizerReference, roundMode, &idec_signaling_flags);
-    _value.low64 = dec128.w[LOW_64];
-    _value.high64 = dec128.w[HIGH_64];
+    _value = Decimal128Value(dec128.w);
 }
-Decimal128::Decimal128(std::string s, RoundingModes roundMode) {
+Decimal128::Decimal128(std::string s, RoundingMode roundMode) {
     std::unique_ptr<char[]> charInput(new char[s.size() + 1]);
     std::copy(s.begin(), s.end(), charInput.get());
     charInput[s.size()] = '\0';
     BID_UINT128 dec128;
     uint32_t idec_signaling_flags = 0;
     dec128 = bid128_from_string(charInput.get(), roundMode, &idec_signaling_flags);
-    _value.low64 = dec128.w[LOW_64];
-    _value.high64 = dec128.w[HIGH_64];
+    _value = Decimal128Value(dec128.w);
 }
 Decimal128::~Decimal128() {
 }
@@ -142,7 +137,7 @@ const Decimal128::Decimal128Value Decimal128::getValue() const {
     return _value;
 }
 
-int32_t Decimal128::toInt(RoundingModes roundMode) {
+int32_t Decimal128::toInt(RoundingMode roundMode) {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
@@ -160,7 +155,7 @@ int32_t Decimal128::toInt(RoundingModes roundMode) {
     // Mimic behavior of Intel library (if round mode not valid, assume default)
     return bid128_to_int32_rnint(dec128, &idec_signaling_flags);
 }
-int64_t Decimal128::toLong(RoundingModes roundMode) {
+int64_t Decimal128::toLong(RoundingMode roundMode) {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
@@ -178,7 +173,7 @@ int64_t Decimal128::toLong(RoundingModes roundMode) {
     // Mimic behavior of Intel library (if round mode not valid, assume default)
     return bid128_to_int64_rnint(dec128, &idec_signaling_flags);
 }
-double Decimal128::toDouble(RoundingModes roundMode) {
+double Decimal128::toDouble(RoundingMode roundMode) {
     // Intel library only supports one type of float to float conversion, so just discard flags
     return isAndToDouble(roundMode).first;
 }
@@ -190,7 +185,7 @@ std::string Decimal128::toString() {
     std::string s = c.get();
     return s;
 }
-std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingModes roundMode) {
+std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingMode roundMode) {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
@@ -213,7 +208,7 @@ std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingModes roundMode) {
     return std::make_pair<int32_t, bool>(bid128_to_int32_xrnint(dec128, &idec_signaling_flags),
                                          idec_signaling_flags == 0);
 }
-std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingModes roundMode) {
+std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingMode roundMode) {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
@@ -237,14 +232,14 @@ std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingModes roundMode) {
     return std::make_pair<int64_t, bool>(bid128_to_int64_xrnint(dec128, &idec_signaling_flags),
                                          idec_signaling_flags == 0);
 }
-std::pair<double, bool> Decimal128::isAndToDouble(RoundingModes roundMode) {
+std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
     return std::make_pair<double, bool>(
         bid128_to_binary64(dec128, roundMode, &idec_signaling_flags), idec_signaling_flags == 0);
 }
 
-Decimal128 Decimal128::add(const Decimal128& dec128, RoundingModes roundMode) {
+Decimal128 Decimal128::add(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 addend = Decimal128ToLibraryType(dec128.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -255,7 +250,7 @@ Decimal128 Decimal128::add(const Decimal128& dec128, RoundingModes roundMode) {
     Decimal128 result(value);
     return result;
 }
-Decimal128 Decimal128::subtract(const Decimal128& dec128, RoundingModes roundMode) {
+Decimal128 Decimal128::subtract(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 sub = Decimal128ToLibraryType(dec128.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -266,7 +261,7 @@ Decimal128 Decimal128::subtract(const Decimal128& dec128, RoundingModes roundMod
     Decimal128 result(value);
     return result;
 }
-Decimal128 Decimal128::multiply(const Decimal128& dec128, RoundingModes roundMode) {
+Decimal128 Decimal128::multiply(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 factor = Decimal128ToLibraryType(dec128.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -277,7 +272,7 @@ Decimal128 Decimal128::multiply(const Decimal128& dec128, RoundingModes roundMod
     Decimal128 result(value);
     return result;
 }
-Decimal128 Decimal128::divide(const Decimal128& dec128, RoundingModes roundMode) {
+Decimal128 Decimal128::divide(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 divisor = Decimal128ToLibraryType(dec128.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -288,7 +283,7 @@ Decimal128 Decimal128::divide(const Decimal128& dec128, RoundingModes roundMode)
     Decimal128 result(value);
     return result;
 }
-Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingModes roundMode) {
+Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 q = Decimal128ToLibraryType(reference.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -334,5 +329,14 @@ bool Decimal128::compareLessEqual(const Decimal128& dec128) {
     BID_UINT128 compare = Decimal128ToLibraryType(dec128.getValue());
     uint32_t idec_signaling_flags = 0;
     return bid128_quiet_less_equal(current, compare, &idec_signaling_flags);
+}
+bool Decimal128::totalOrder(const Decimal128& dec128) {
+    BID_UINT128 current = Decimal128ToLibraryType(_value);
+    BID_UINT128 compare = Decimal128ToLibraryType(dec128.getValue());
+    if (bid128_isNaN(current))
+        return true;
+    if (bid128_isNaN(compare))
+        return false;
+    return bid128_totalOrder(current, compare);
 }
 }
