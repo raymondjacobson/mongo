@@ -34,7 +34,7 @@ namespace mongo {
     public:
         StorageEngine* getGlobalStorageEngine();
 
-        void setGlobalStorageEngine(const std::string& name);
+        void initializeGlobalStorageEngine();
 
         void shutdownGlobalStorageEngineCleanly();
 
@@ -57,7 +57,7 @@ namespace mongo {
 
         void registerKillOpListener(KillOpListenerInterface* listener);
 
-        OperationContext* newOpCtx();
+        std::unique_ptr<OperationContext> newOpCtx();
 
         void setOpObserver(std::unique_ptr<OpObserver> opObserver);
 

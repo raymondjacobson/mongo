@@ -49,7 +49,7 @@ namespace mongo {
 
         StorageEngine* getGlobalStorageEngine();
 
-        void setGlobalStorageEngine(const std::string& name);
+        void initializeGlobalStorageEngine();
 
         void shutdownGlobalStorageEngineCleanly();
 
@@ -72,7 +72,7 @@ namespace mongo {
 
         void registerKillOpListener(KillOpListenerInterface* listener);
 
-        OperationContext* newOpCtx();
+        std::unique_ptr<OperationContext> newOpCtx();
 
         void setOpObserver(std::unique_ptr<OpObserver> opObserver);
 
@@ -80,7 +80,23 @@ namespace mongo {
 
     private:
 
+        /**
+         * Kills the active operation on "client" if that operation is associated with operation id
+         * "opId".
+         *
+         * Returns true if an operation was killed.
+         *
+         * Must only be called by a thread owning both this service context's mutex and the
+         * client's.
+         */
         bool _killOperationsAssociatedWithClientAndOpId_inlock(Client* client, unsigned int opId);
+
+        /**
+         * Kills the given operation.
+         *
+         * Caller must own the service context's _mutex.
+         */
+        void _killOperation_inlock(OperationContext* opCtx);
 
         bool _globalKill;
 

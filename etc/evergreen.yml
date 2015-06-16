@@ -233,6 +233,7 @@ functions:
         ${asan_symbolizer} ${enable_lsan} ${python|python} buildscripts/resmoke.py ${resmoke_args} ${test_flags} --log=buildlogger --reportFile=report.json
 
 pre:
+  - command: shell.track
   - command: shell.exec
     params:
       silent: true
@@ -251,6 +252,7 @@ post:
       script: |
         ${killall_mci|pkill -9 mongod; pkill -9 mongos; pkill -9 mongo; pkill -9 bsondump; pkill -9 mongoimport; pkill -9 mongoexport; pkill -9 mongodump; pkill -9 mongorestore; pkill -9 mongostat; pkill -9 mongofiles; pkill -9 mongooplog; pkill -9 mongotop; pkill -9 mongobridge; pkill -9 mongod-2.6; pkill -9 mongos-2.6; pkill -9 mongo-2.6; pkill -9 bsondump-2.6; pkill -9 mongoimport-2.6; pkill -9 mongoexport-2.6; pkill -9 mongodump-2.6; pkill -9 mongorestore-2.6; pkill -9 mongostat-2.6; pkill -9 mongofiles-2.6; pkill -9 mongooplog-2.6; pkill -9 mongotop-2.6; pkill -9 mongobridge-2.6; pkill -9 mongod-2.4; pkill -9 mongos-2.4; pkill -9 mongo-2.4; pkill -9 bsondump-2.4; pkill -9 mongoimport-2.4; pkill -9 mongoexport-2.4; pkill -9 mongodump-2.4; pkill -9 mongorestore-2.4; pkill -9 mongostat-2.4; pkill -9 mongofiles-2.4; pkill -9 mongooplog-2.4; pkill -9 mongotop-2.4; pkill -9 resmoke.py; pkill -9 python; pkill -9 cl; pkill -9 lock_mgr_test; pkill -9 background_job_test; pkill -9 repl_coordinator_impl_heartbeat_test} >/dev/null 2>&1
         exit 0
+  - command: shell.cleanup
 
 timeout:
   - command: shell.exec
@@ -624,15 +626,7 @@ tasks:
   - func: "do setup"
   - func: "run tests"
     vars:
-      resmoke_args: -j8 --suites=core_auth --storageEngine=mmapv1
-
-- <<: *task_template
-  name: jsCore_auth_WT
-  commands:
-  - func: "do setup"
-  - func: "run tests"
-    vars:
-      resmoke_args: -j8 --suites=core_auth --storageEngine=wiredTiger
+      resmoke_args: -j8 --suites=core_auth
 
 - <<: *task_template
   name: jsCore_op_command
@@ -2118,7 +2112,7 @@ buildvariants:
     push_arch: i686
     compile_flags: --release --distarch=i686 -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release" --wiredtiger=off CCFLAGS="-m32" LINKFLAGS="-m32"
     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure -j1  # Avoid starting too many mongod's on 32-bit systems.
+    test_flags: --continueOnFailure --storageEngine=mmapv1 -j1  # Avoid starting too many mongod's on 32-bit systems.
     has_debugsymbols: true
   tasks:
   - name: compile
@@ -2155,7 +2149,7 @@ buildvariants:
     push_name: linux-debug
     push_arch: i686
     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure -j1  # Avoid starting too many mongod's on 32-bit systems.
+    test_flags: --continueOnFailure --storageEngine=mmapv1 -j1  # Avoid starting too many mongod's on 32-bit systems.
     has_debugsymbols: true
     compile_flags: --dbg=on --distarch=i686 --opt=on -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/debug" --wiredtiger=off CCFLAGS="-m32" LINKFLAGS="-m32"
   tasks:
@@ -2534,7 +2528,7 @@ buildvariants:
     content_type: application/zip
     compile_flags: --release -j$(grep -c ^processor /proc/cpuinfo) --wiredtiger=off TARGET_ARCH=i386 --variant-dir=win32
     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure -j1  # Avoid starting too many mongod's on 32-bit systems.
+    test_flags: --continueOnFailure --storageEngine=mmapv1 -j1  # Avoid starting too many mongod's on 32-bit systems.
     ext: zip
     # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
     is_windows: true
