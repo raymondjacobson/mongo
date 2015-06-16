@@ -48,6 +48,8 @@ env.CppUnitTest(
     LIBDEPS=[
         'bson',
     ],
+    LIBPATH=['/Users/raymondjacobson/playground/IntelRDFPMathLib20U1/LIBRARY/'],
+    LIBS=['bid']
 )
 
 env.CppUnitTest(

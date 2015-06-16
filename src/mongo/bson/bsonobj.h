@@ -78,6 +78,7 @@ namespace mongo {
      OID:       an OID object
      NumberDouble: <double>
      NumberInt: <int32>
+     NumberDecimal: <dec128>
      String:    <unsigned32 strsizewithnull><cstring>
      Date:      <8bytes>
      Regex:     <cstring regex><cstring options>
