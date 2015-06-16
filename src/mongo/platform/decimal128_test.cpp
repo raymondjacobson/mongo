@@ -495,6 +495,21 @@ TEST_F(Decimal128Test, TestDecimal128IsInfinite) {
     ASSERT_TRUE(d4.isInfinite());
 }
 
+TEST_F(Decimal128Test, TestDecimal128IsNegative) {
+    Decimal128 d1("NaN");
+    Decimal128 d2("-NaN");
+    Decimal128 d3("10.5");
+    Decimal128 d4("-10.5");
+    Decimal128 d5("Inf");
+    Decimal128 d6("-Inf");
+    ASSERT_FALSE(d1.isNegative());
+    ASSERT_FALSE(d3.isNegative());
+    ASSERT_FALSE(d5.isNegative());
+    ASSERT_TRUE(d2.isNegative());
+    ASSERT_TRUE(d4.isNegative());
+    ASSERT_TRUE(d6.isNegative());
+}
+
 // Tests for Decimal128 math operations
 TEST_F(Decimal128Test, TestDecimal128AdditionCase1) {
     Decimal128 d1("25.05E20");
