@@ -59,6 +59,7 @@ TEST_F(Decimal128Test, TestDefaultConstructor) {
     ASSERT_EQUALS(val.high64, ullZero);
     ASSERT_EQUALS(val.low64, ullZero);
 }
+
 TEST_F(Decimal128Test, TestInt32ConstructorZero) {
     int32_t intZero = 0;
     Decimal128 d(intZero);
@@ -69,6 +70,7 @@ TEST_F(Decimal128Test, TestInt32ConstructorZero) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestInt32ConstructorMax) {
     int32_t intMax = 2147483647;
     Decimal128 d(intMax);
@@ -79,6 +81,7 @@ TEST_F(Decimal128Test, TestInt32ConstructorMax) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestInt32ConstructorMin) {
     int32_t intMin = -2147483648;
     Decimal128 d(intMin);
@@ -89,6 +92,7 @@ TEST_F(Decimal128Test, TestInt32ConstructorMin) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestInt64ConstructorZero) {
     int64_t longZero = 0;
     Decimal128 d(longZero);
@@ -99,6 +103,7 @@ TEST_F(Decimal128Test, TestInt64ConstructorZero) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestInt64ConstructorMax) {
     int64_t longMax = LONG_MAX;
     Decimal128 d(longMax);
@@ -109,6 +114,7 @@ TEST_F(Decimal128Test, TestInt64ConstructorMax) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestInt64ConstructorMin) {
     int64_t longMin = LONG_MIN;
     Decimal128 d(longMin);
@@ -119,84 +125,98 @@ TEST_F(Decimal128Test, TestInt64ConstructorMin) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant1) {
     double dbl = 0.1 / 10;
     Decimal128 d(dbl);
     Decimal128 e("0.01");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant2) {
     double dbl = 0.1 / 10000;
     Decimal128 d(dbl);
     Decimal128 e("0.00001");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant3) {
     double dbl = 0.1 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1E-19");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant4) {
     double dbl = 0.01 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
     Decimal128 d(dbl);
     Decimal128 e("100000000000000E+2");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant5) {
     double dbl = 0.0127;
     Decimal128 d(dbl);
     Decimal128 e("0.0127");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant6) {
     double dbl = 1234567890.12709;
     Decimal128 d(dbl);
     Decimal128 e("1234567890.12709");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorQuant7) {
     double dbl = 0.1129857 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1.12985700000000E-19");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorZero) {
     double doubleZero = 0;
     Decimal128 d(doubleZero);
     Decimal128 e("0");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundDown) {
     double doubleMax = DBL_MAX;
-    Decimal128 d(doubleMax, Decimal128::RoundingModes::kRoundTowardNegative);
+    Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardNegative);
     Decimal128 e("179769313486231E294");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundUp) {
     double doubleMax = DBL_MAX;
-    Decimal128 d(doubleMax, Decimal128::RoundingModes::kRoundTowardPositive);
+    Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardPositive);
     Decimal128 e("179769313486232E294");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorMaxNeg) {
     double doubleMax = -1 * DBL_MAX;
     Decimal128 d(doubleMax);
     Decimal128 e("-179769313486232E294");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorMin) {
     double min = DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("2.22507385850720E-308");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestDoubleConstructorMinNeg) {
     double min = -DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("-2.22507385850720E-308");
     ASSERT_TRUE(d.compareEqual(e));
 }
+
 TEST_F(Decimal128Test, TestStringConstructorInRange) {
     std::string s = "+2.010";
     Decimal128 d(s);
@@ -207,6 +227,7 @@ TEST_F(Decimal128Test, TestStringConstructorInRange) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestStringConstructorPosInfinity) {
     std::string s = "+INFINITY";
     Decimal128 d(s);
@@ -217,6 +238,7 @@ TEST_F(Decimal128Test, TestStringConstructorPosInfinity) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestStringConstructorNegInfinity) {
     std::string s = "-INFINITY";
     Decimal128 d(s);
@@ -227,6 +249,7 @@ TEST_F(Decimal128Test, TestStringConstructorNegInfinity) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
 TEST_F(Decimal128Test, TestStringConstructorNaN) {
     std::string s = "I am not a number!";
     Decimal128 d(s);
@@ -247,8 +270,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Even) {
         ASSERT_EQUALS(decPtr->toInt(), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt32Neg) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardNegative;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-3, -3, -3, 2, 2, 2};
     std::unique_ptr<Decimal128> decPtr;
@@ -257,8 +281,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Neg) {
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt32Pos) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardPositive;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-2, -2, -2, 3, 3, 3};
     std::unique_ptr<Decimal128> decPtr;
@@ -267,8 +292,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Pos) {
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt32Zero) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardZero;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-2, -2, -2, 2, 2, 2};
     std::unique_ptr<Decimal128> decPtr;
@@ -277,8 +303,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Zero) {
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt32Away) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToAway;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-3, -3, -2, 2, 3, 3};
     std::unique_ptr<Decimal128> decPtr;
@@ -287,6 +314,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Away) {
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt64Even) {
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
@@ -301,8 +329,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Even) {
         ASSERT_EQUALS(decPtr->toLong(), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt64Neg) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardNegative;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
                          "-4294967296.2",
@@ -316,8 +345,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Neg) {
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt64Pos) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardPositive;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
                          "-4294967296.2",
@@ -331,8 +361,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Pos) {
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt64Zero) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTowardZero;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
                          "-4294967296.2",
@@ -346,8 +377,9 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Zero) {
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToInt64Away) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToAway;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
                          "-4294967296.2",
@@ -361,26 +393,30 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Away) {
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToDoubleNormal) {
     std::string s = "+2.015";
     Decimal128 d(s);
     double result = d.toDouble();
     ASSERT_EQUALS(result, 2.015);
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToDoubleZero) {
     std::string s = "+0.000";
     Decimal128 d(s);
     double result = d.toDouble();
     ASSERT_EQUALS(result, 0.0);
 }
+
 TEST_F(Decimal128Test, TestDecimal128ToString) {
     std::string s = "-2087.015E+281";
     Decimal128 d(s);
     std::string result = d.toString();
     ASSERT_EQUALS(result, "-2087015E+278");
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "2";
     Decimal128 d(s);
     std::pair<int32_t, bool> result;
@@ -388,8 +424,9 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
     ASSERT_EQUALS(result.first, 2);
     ASSERT_EQUALS(result.second, true);
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "2.6";
     Decimal128 d(s);
     std::pair<int32_t, bool> result;
@@ -397,8 +434,9 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
     ASSERT_EQUALS(result.first, 3);
     ASSERT_EQUALS(result.second, false);
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "1125899906842624";
     Decimal128 d(s);
     std::pair<int64_t, bool> result;
@@ -406,8 +444,9 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
     ASSERT_EQUALS(result.first, 1125899906842624);
     ASSERT_EQUALS(result.second, true);
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "1125899906842624.8";
     Decimal128 d(s);
     std::pair<int64_t, bool> result;
@@ -415,8 +454,9 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
     ASSERT_EQUALS(result.first, 1125899906842625);
     ASSERT_EQUALS(result.second, false);
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "0.125";
     Decimal128 d(s);
     std::pair<double, bool> result;
@@ -424,8 +464,9 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
     ASSERT_EQUALS(result.first, 0.125);
     ASSERT_EQUALS(result.second, true);
 }
+
 TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
-    Decimal128::RoundingModes roundMode = Decimal128::RoundingModes::kRoundTiesToEven;
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "0.1";
     Decimal128 d(s);
     std::pair<double, bool> result;
@@ -446,6 +487,7 @@ TEST_F(Decimal128Test, TestDecimal128AdditionCase1) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128AdditionCase2) {
     std::string s1 = "1.00";
     std::string s2 = "2.000";
@@ -457,6 +499,7 @@ TEST_F(Decimal128Test, TestDecimal128AdditionCase2) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128SubtractionCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-50.5218E19";
@@ -468,6 +511,7 @@ TEST_F(Decimal128Test, TestDecimal128SubtractionCase1) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128SubtractionCase2) {
     std::string s1 = "1.00";
     std::string s2 = "2.000";
@@ -479,6 +523,7 @@ TEST_F(Decimal128Test, TestDecimal128SubtractionCase2) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128MultiplicationCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-50.5218E19";
@@ -490,6 +535,7 @@ TEST_F(Decimal128Test, TestDecimal128MultiplicationCase1) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128MultiplicationCase2) {
     std::string s1 = "1.00";
     std::string s2 = "2.000";
@@ -501,6 +547,7 @@ TEST_F(Decimal128Test, TestDecimal128MultiplicationCase2) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128DivisionCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-50.5218E19";
@@ -512,6 +559,7 @@ TEST_F(Decimal128Test, TestDecimal128DivisionCase1) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128DivisionCase2) {
     std::string s1 = "1.00";
     std::string s2 = "2.000";
@@ -523,6 +571,7 @@ TEST_F(Decimal128Test, TestDecimal128DivisionCase2) {
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
+
 TEST_F(Decimal128Test, TestDecimal128Quantizer) {
     std::string s1 = "1.000008";
     std::string s2 = "0.00001";
@@ -544,6 +593,7 @@ TEST_F(Decimal128Test, TestDecimal128EqualCase1) {
     bool result = d1.compareEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128EqualCase2) {
     std::string s1 = "1.00";
     std::string s2 = "1.000000000";
@@ -552,6 +602,7 @@ TEST_F(Decimal128Test, TestDecimal128EqualCase2) {
     bool result = d1.compareEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
     std::string s1 = "0.1";
     std::string s2 = "0.100000000000000005";
@@ -560,6 +611,7 @@ TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
     bool result = d1.compareEqual(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "25.06E20";
@@ -568,6 +620,7 @@ TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
     bool result = d1.compareNotEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase2) {
     std::string s1 = "-25.0001E20";
     std::string s2 = "-25.00010E20";
@@ -576,6 +629,7 @@ TEST_F(Decimal128Test, TestDecimal128NotEqualCase2) {
     bool result = d1.compareNotEqual(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-25.05E20";
@@ -584,6 +638,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterCase1) {
     bool result = d1.compareGreater(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterCase2) {
     std::string s1 = "25.05E20";
     std::string s2 = "25.05E20";
@@ -592,6 +647,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterCase2) {
     bool result = d1.compareGreater(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterCase3) {
     std::string s1 = "-INFINITY";
     std::string s2 = "+INFINITY";
@@ -600,6 +656,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterCase3) {
     bool result = d1.compareGreater(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-25.05E20";
@@ -608,6 +665,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase1) {
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase2) {
     std::string s1 = "25.05E20";
     std::string s2 = "25.05E20";
@@ -616,6 +674,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase2) {
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase3) {
     std::string s1 = "-INFINITY";
     std::string s2 = "+INFINITY";
@@ -624,6 +683,7 @@ TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase3) {
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-25.05E20";
@@ -632,6 +692,7 @@ TEST_F(Decimal128Test, TestDecimal128LessCase1) {
     bool result = d1.compareLess(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessCase2) {
     std::string s1 = "25.05E20";
     std::string s2 = "25.05E20";
@@ -640,6 +701,7 @@ TEST_F(Decimal128Test, TestDecimal128LessCase2) {
     bool result = d1.compareLess(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessCase3) {
     std::string s1 = "-INFINITY";
     std::string s2 = "+INFINITY";
@@ -648,6 +710,7 @@ TEST_F(Decimal128Test, TestDecimal128LessCase3) {
     bool result = d1.compareLess(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase1) {
     std::string s1 = "25.05E20";
     std::string s2 = "-25.05E20";
@@ -656,6 +719,7 @@ TEST_F(Decimal128Test, TestDecimal128LessEqualCase1) {
     bool result = d1.compareLessEqual(d2);
     ASSERT_FALSE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase2) {
     std::string s1 = "25.05E20";
     std::string s2 = "25.05E20";
@@ -664,6 +728,7 @@ TEST_F(Decimal128Test, TestDecimal128LessEqualCase2) {
     bool result = d1.compareLessEqual(d2);
     ASSERT_TRUE(result);
 }
+
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
     std::string s1 = "-INFINITY";
     std::string s2 = "+INFINITY";
@@ -671,5 +736,48 @@ TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
     Decimal128 d2(s2);
     bool result = d1.compareLessEqual(d2);
     ASSERT_TRUE(result);
+}
+
+TEST_F(Decimal128Test, TestDecimal128TotalOrdering) {
+    std::string pNaN = "NaN";
+    std::string nNaN = "-NaN";
+    std::string nInf = "-INFINITY";
+    std::string n = "25.05";
+    std::string pInf = "+INFINITY";
+    Decimal128 posNaN(pNaN);
+    Decimal128 negNaN(nNaN);
+    Decimal128 negInf(nInf);
+    Decimal128 number(n);
+    Decimal128 posInf(pInf);
+    ASSERT_TRUE(posNaN.totalOrder(negInf));
+    ASSERT_TRUE(negNaN.totalOrder(negInf));
+    ASSERT_TRUE(posNaN.totalOrder(number));
+    ASSERT_TRUE(negNaN.totalOrder(number));
+    ASSERT_TRUE(posNaN.totalOrder(posInf));
+    ASSERT_TRUE(negNaN.totalOrder(posInf));
+
+    ASSERT_TRUE(negInf.totalOrder(negInf));
+    ASSERT_TRUE(negInf.totalOrder(number));
+    ASSERT_TRUE(negInf.totalOrder(posInf));
+
+    ASSERT_TRUE(number.totalOrder(number));
+    ASSERT_TRUE(number.totalOrder(posInf));
+
+    ASSERT_TRUE(posInf.totalOrder(posInf));
+
+    ASSERT_TRUE(posNaN.totalOrder(negNaN));
+    ASSERT_TRUE(negNaN.totalOrder(posNaN));
+
+    ASSERT_FALSE(negInf.totalOrder(posNaN));
+    ASSERT_FALSE(negInf.totalOrder(negNaN));
+    ASSERT_FALSE(number.totalOrder(posNaN));
+    ASSERT_FALSE(number.totalOrder(negNaN));
+    ASSERT_FALSE(posInf.totalOrder(posNaN));
+    ASSERT_FALSE(posInf.totalOrder(negNaN));
+
+    ASSERT_FALSE(number.totalOrder(negInf));
+    ASSERT_FALSE(posInf.totalOrder(negInf));
+
+    ASSERT_FALSE(posInf.totalOrder(number));
 }
 }
