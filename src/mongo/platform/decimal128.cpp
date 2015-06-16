@@ -239,6 +239,14 @@ std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
         bid128_to_binary64(dec128, roundMode, &idec_signaling_flags), idec_signaling_flags == 0);
 }
 
+bool Decimal128::isNaN() {
+    return bid128_isNaN(Decimal128ToLibraryType(_value));
+}
+
+bool Decimal128::isInfinite() {
+    return bid128_isInf(Decimal128ToLibraryType(_value));
+}
+
 Decimal128 Decimal128::add(const Decimal128& dec128, RoundingMode roundMode) {
     BID_UINT128 current = Decimal128ToLibraryType(_value);
     BID_UINT128 addend = Decimal128ToLibraryType(dec128.getValue());

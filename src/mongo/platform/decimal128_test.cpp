@@ -475,110 +475,103 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
     ASSERT_EQUALS(result.second, false);
 }
 
+TEST_F(Decimal128Test, TestDecimal128IsNaN) {
+    Decimal128 d1("NaN");
+    Decimal128 d2("10.5");
+    Decimal128 d3("Inf");
+    ASSERT_TRUE(d1.isNaN());
+    ASSERT_FALSE(d2.isNaN());
+    ASSERT_FALSE(d3.isNaN());
+}
+
+TEST_F(Decimal128Test, TestDecimal128IsInfinite) {
+    Decimal128 d1("NaN");
+    Decimal128 d2("10.5");
+    Decimal128 d3("Inf");
+    Decimal128 d4("-Inf");
+    ASSERT_FALSE(d1.isInfinite());
+    ASSERT_FALSE(d2.isInfinite());
+    ASSERT_TRUE(d3.isInfinite());
+    ASSERT_TRUE(d4.isInfinite());
+}
+
 // Tests for Decimal128 math operations
 TEST_F(Decimal128Test, TestDecimal128AdditionCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-50.5218E19";
-    std::string s3 = "1.999782E21";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.add(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("1.999782E21");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128AdditionCase2) {
-    std::string s1 = "1.00";
-    std::string s2 = "2.000";
-    std::string s3 = "3.000";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("1.00");
+    Decimal128 d2("2.000");
     Decimal128 result = d1.add(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("3.000");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128SubtractionCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-50.5218E19";
-    std::string s3 = "3.010218E21";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.subtract(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("3.010218E21");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128SubtractionCase2) {
-    std::string s1 = "1.00";
-    std::string s2 = "2.000";
-    std::string s3 = "-1.000";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("1.00");
+    Decimal128 d2("2.000");
     Decimal128 result = d1.subtract(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("-1.000");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128MultiplicationCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-50.5218E19";
-    std::string s3 = "-1.265571090E42";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.multiply(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("-1.265571090E42");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128MultiplicationCase2) {
-    std::string s1 = "1.00";
-    std::string s2 = "2.000";
-    std::string s3 = "2.00000";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("1.00");
+    Decimal128 d2("2.000");
     Decimal128 result = d1.multiply(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("2.00000");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128DivisionCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-50.5218E19";
-    std::string s3 = "-4.958255644098191275845278671781290";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.divide(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("-4.958255644098191275845278671781290");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128DivisionCase2) {
-    std::string s1 = "1.00";
-    std::string s2 = "2.000";
-    std::string s3 = "0.5";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("1.00");
+    Decimal128 d2("2.000");
     Decimal128 result = d1.divide(d2);
-    Decimal128 expected(s3);
+    Decimal128 expected("0.5");
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
 TEST_F(Decimal128Test, TestDecimal128Quantizer) {
-    std::string s1 = "1.000008";
-    std::string s2 = "0.00001";
-    std::string s3 = "1.00001";
-    Decimal128 expected(s3);
-    Decimal128 val(s1);
-    Decimal128 ref(s2);
+    Decimal128 expected("1.00001");
+    Decimal128 val("1.000008");
+    Decimal128 ref("0.00001");
     Decimal128 result = val.quantize(ref);
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
@@ -586,169 +579,130 @@ TEST_F(Decimal128Test, TestDecimal128Quantizer) {
 
 // Tests for Decimal128 comparison operations
 TEST_F(Decimal128Test, TestDecimal128EqualCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.05E20");
     bool result = d1.compareEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128EqualCase2) {
-    std::string s1 = "1.00";
-    std::string s2 = "1.000000000";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("1.00");
+    Decimal128 d2("1.000000000");
     bool result = d1.compareEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
-    std::string s1 = "0.1";
-    std::string s2 = "0.100000000000000005";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("0.1");
+    Decimal128 d2("0.100000000000000005");
     bool result = d1.compareEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.06E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.06E20");
     bool result = d1.compareNotEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase2) {
-    std::string s1 = "-25.0001E20";
-    std::string s2 = "-25.00010E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("-25.0001E20");
+    Decimal128 d2( "-25.00010E20");
     bool result = d1.compareNotEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-25.05E20");
     bool result = d1.compareGreater(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase2) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.05E20");
     bool result = d1.compareGreater(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase3) {
-    std::string s1 = "-INFINITY";
-    std::string s2 = "+INFINITY";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("-INFINITY");
+    Decimal128 d2("+INFINITY");
     bool result = d1.compareGreater(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-25.05E20");
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase2) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.05E20");
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase3) {
-    std::string s1 = "-INFINITY";
-    std::string s2 = "+INFINITY";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("-INFINITY");
+    Decimal128 d2("+INFINITY");
     bool result = d1.compareGreaterEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-25.05E20");
     bool result = d1.compareLess(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase2) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.05E20");
     bool result = d1.compareLess(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase3) {
-    std::string s1 = "-INFINITY";
-    std::string s2 = "+INFINITY";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("-INFINITY");
+    Decimal128 d2("+INFINITY");
     bool result = d1.compareLess(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase1) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "-25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("-25.05E20");
     bool result = d1.compareLessEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase2) {
-    std::string s1 = "25.05E20";
-    std::string s2 = "25.05E20";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("25.05E20");
+    Decimal128 d2("25.05E20");
     bool result = d1.compareLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
-    std::string s1 = "-INFINITY";
-    std::string s2 = "+INFINITY";
-    Decimal128 d1(s1);
-    Decimal128 d2(s2);
+    Decimal128 d1("-INFINITY");
+    Decimal128 d2("+INFINITY");
     bool result = d1.compareLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128TotalOrdering) {
-    std::string pNaN = "NaN";
-    std::string nNaN = "-NaN";
-    std::string nInf = "-INFINITY";
-    std::string n = "25.05";
-    std::string pInf = "+INFINITY";
-    Decimal128 posNaN(pNaN);
-    Decimal128 negNaN(nNaN);
-    Decimal128 negInf(nInf);
-    Decimal128 number(n);
-    Decimal128 posInf(pInf);
+    Decimal128 posNaN("NaN");
+    Decimal128 negNaN("-NaN");
+    Decimal128 negInf("-INFINITY");
+    Decimal128 number("25.05");
+    Decimal128 posInf("+INFINITY");
     ASSERT_TRUE(posNaN.totalOrder(negInf));
     ASSERT_TRUE(negNaN.totalOrder(negInf));
     ASSERT_TRUE(posNaN.totalOrder(number));
