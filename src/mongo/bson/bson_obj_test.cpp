@@ -183,6 +183,132 @@ TEST(BSONObjCompare, NumberLong_Double) {
     }
 }
 
+TEST(BSONObjCompare, NumberDecimalScaleAndZero) {
+    ASSERT_LT(BSON("" << Decimal128(0.0)), BSON("" << Decimal128(1.0)));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << Decimal128(0.0)));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << Decimal128(1.0)));
+
+    ASSERT_LT(BSON("" << Decimal128(0.0)), BSON("" << Decimal128(0.1)));
+    ASSERT_LT(BSON("" << Decimal128(0.1)), BSON("" << Decimal128(1.0)));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << Decimal128(-0.1)));
+    ASSERT_LT(BSON("" << Decimal128(-0.1)), BSON("" << Decimal128(-0.0)));
+    ASSERT_LT(BSON("" << Decimal128(-0.1)), BSON("" << Decimal128(0.1)));
+}
+
+TEST(BSONObjCompare, NumberDecimalMaxAndMins) {
+    ASSERT_LT(BSON("" << Decimal128(0.0)), BSON("" << Decimal128::getPosMin()));
+    ASSERT_GT(BSON("" << Decimal128(0.0)), BSON("" << Decimal128::getNegMin()));
+
+    ASSERT_EQ(BSON("" << Decimal128(1.0)),
+              BSON("" << Decimal128(1.0).add(Decimal128::getPosMin())));  // over 34 digits of
+                                                                          // precision so it
+                                                                          // should be equal
+    ASSERT_EQ(BSON("" << Decimal128(0.0)), BSON("" << Decimal128(-0.0)));
+}
+
+TEST(BSONObjCompare, NumberDecimalInfinity) {
+    ASSERT_GT(BSON("" << Decimal128::getPosInfinity()), BSON("" << Decimal128(0.0)));
+    ASSERT_GT(BSON("" << Decimal128::getPosInfinity()), BSON("" << Decimal128::getPosMax()));
+    ASSERT_GT(BSON("" << Decimal128::getPosInfinity()), BSON("" << Decimal128::getNegInfinity()));
+
+    ASSERT_LT(BSON("" << Decimal128::getNegInfinity()), BSON("" << Decimal128(0.0)));
+    ASSERT_LT(BSON("" << Decimal128::getNegInfinity()), BSON("" << Decimal128::getNegMax()));
+    ASSERT_LT(BSON("" << Decimal128::getNegInfinity()), BSON("" << Decimal128::getPosInfinity()));
+}
+
+TEST(BSONObjCompare, NumberDecimalPosNaN) {
+    // +/-NaN is well ordered and compares smallest, so +NaN and -NaN should behave the same
+    ASSERT_LT(BSON("" << Decimal128::getPosNaN()), BSON("" << 0.0));
+    ASSERT_LT(BSON("" << Decimal128::getPosNaN()), BSON("" << Decimal128::getNegMax()));
+    ASSERT_LT(BSON("" << Decimal128::getPosNaN()), BSON("" << Decimal128::getPosInfinity()));
+    ASSERT_LT(BSON("" << Decimal128::getPosNaN()), BSON("" << Decimal128::getNegInfinity()));
+
+    ASSERT_EQ(BSON("" << Decimal128::getPosNaN()), BSON("" << Decimal128::getNegNaN()));
+}
+
+TEST(BSONObjCompare, NumberDecimalNegNan) {
+    ASSERT_LT(BSON("" << Decimal128::getNegNaN()), BSON("" << 0.0));
+    ASSERT_LT(BSON("" << Decimal128::getNegNaN()), BSON("" << Decimal128::getNegMax()));
+    ASSERT_LT(BSON("" << Decimal128::getNegNaN()), BSON("" << Decimal128::getPosInfinity()));
+    ASSERT_LT(BSON("" << Decimal128::getNegNaN()), BSON("" << Decimal128::getNegInfinity()));
+
+    ASSERT_EQ(BSON("" << Decimal128::getNegNaN()), BSON("" << Decimal128::getPosNaN()));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareInt) {
+    ASSERT_EQ(BSON("" << Decimal128(0.0)), BSON("" << 0));
+    ASSERT_EQ(BSON("" << Decimal128(std::numeric_limits<int>::max())),
+              BSON("" << std::numeric_limits<int>::max()));
+    ASSERT_EQ(BSON("" << Decimal128(-std::numeric_limits<int>::max())),
+              BSON("" << -std::numeric_limits<int>::max()));
+
+    ASSERT_GT(BSON("" << Decimal128(1.0)), BSON("" << 0));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << 0));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareLong) {
+    ASSERT_EQ(BSON("" << Decimal128(0.0)), BSON("" << 0ll));
+    ASSERT_EQ(BSON("" << Decimal128(std::numeric_limits<long long>::max())),
+              BSON("" << std::numeric_limits<long long>::max()));
+    ASSERT_EQ(BSON("" << Decimal128(-std::numeric_limits<long long>::max())),
+              BSON("" << -std::numeric_limits<long long>::max()));
+
+    ASSERT_GT(BSON("" << Decimal128(1.0)), BSON("" << 0ll));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << 0ll));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareDoubleExactRepresentations) {
+    ASSERT_EQ(BSON("" << Decimal128(0.0)), BSON("" << 0.0));
+    ASSERT_EQ(BSON("" << Decimal128(1.0)), BSON("" << 1.0));
+    ASSERT_EQ(BSON("" << Decimal128(-1.0)), BSON("" << -1.0));
+    ASSERT_EQ(BSON("" << Decimal128(0.125)), BSON("" << 0.125));
+
+    ASSERT_LT(BSON("" << Decimal128(0.0)), BSON("" << 0.125));
+    ASSERT_LT(BSON("" << Decimal128(-1.0)), BSON("" << -0.125));
+
+    ASSERT_GT(BSON("" << Decimal128(1.0)), BSON("" << 0.125));
+    ASSERT_GT(BSON("" << Decimal128(0.0)), BSON("" << -0.125));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareDoubleNoDoubleRepresentation) {
+    // Double 0.1 should compare the same as decimal 0.1 because decimal
+    // truncates the double to 15 decimal digits of precision
+    ASSERT_EQ(BSON("" << Decimal128(0.1)), BSON("" << 0.1));
+
+    // But double 0.1 should still compare well
+    ASSERT_LT(BSON("" << Decimal128(0.0)), BSON("" << 0.1));
+    ASSERT_GT(BSON("" << Decimal128(1.0)), BSON("" << 0.1));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareDoubleNoDecimalRepresentation) {
+    // These tests deal with doubles that get adjusted when converted to decimal.
+    // The decimal type only will store a double's first 15 decimal digits of
+    // precision (the most it can accurately express).
+    ASSERT_EQ(BSON("" << Decimal128("179769313486232E294")),
+              BSON("" << std::numeric_limits<double>::max()));
+    ASSERT_EQ(BSON("" << Decimal128("-179769313486232E294")),
+              BSON("" << -std::numeric_limits<double>::max()));
+
+    ASSERT_GT(BSON("" << Decimal128("179769313486233E294")),
+              BSON("" << std::numeric_limits<double>::max()));
+    ASSERT_LT(BSON("" << Decimal128("-179769313486231E294")),
+              BSON("" << -std::numeric_limits<double>::min()));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareDoubleInfinity) {
+    ASSERT_EQ(BSON("" << Decimal128::getPosInfinity()),
+              BSON("" << std::numeric_limits<double>::infinity()));
+    ASSERT_EQ(BSON("" << Decimal128::getNegInfinity()),
+              BSON("" << -std::numeric_limits<double>::infinity()));
+}
+
+TEST(BSONObjCompare, NumberDecimalCompareDoubleNaN) {
+    ASSERT_EQ(BSON("" << Decimal128::getPosNaN()),
+              BSON("" << std::numeric_limits<double>::quiet_NaN()));
+    ASSERT_EQ(BSON("" << Decimal128::getNegNaN()),
+              BSON("" << -std::numeric_limits<double>::quiet_NaN()));
+}
+
 TEST(BSONObjCompare, StringSymbol) {
     BSONObj l, r;
     {

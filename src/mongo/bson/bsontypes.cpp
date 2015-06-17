@@ -45,7 +45,7 @@ struct MaxKeyData {
     char name;
     char eoo;
 } maxkeydata;
-BSONObj maxKey((const char*)&maxkeydata);
+BSONObj maxKey((const char*) & maxkeydata);
 
 struct MinKeyData {
     MinKeyData() {
@@ -59,7 +59,7 @@ struct MinKeyData {
     char name;
     char eoo;
 } minkeydata;
-BSONObj minKey((const char*)&minkeydata);
+BSONObj minKey((const char*) & minkeydata);
 
 /*
     struct JSObj0 {
@@ -116,11 +116,15 @@ const char* typeName(BSONType type) {
             return "Timestamp";
         case NumberLong:
             return "NumberLong64";
-        // JSTypeMax doesn't make sense to turn into a string; overlaps with highest-valued type
+        case NumberDecimal:
+            return "NumberDecimal128";
+        // JSTypeMax doesn't make sense to turn into a string; overlaps with highest-valued
+        // type
         case MaxKey:
             return "MaxKey";
         default:
             return "Invalid";
     }
 }
+
 }  // namespace mongo

@@ -191,6 +191,13 @@ TEST_F(Decimal128Test, TestDoubleConstructorZero) {
     ASSERT_TRUE(d.isEqual(e));
 }
 
+TEST_F(Decimal128Test, TestDoubleConstructorNeg) {
+    double doubleNeg = -1.0;
+    Decimal128 d(doubleNeg);
+    Decimal128 e("-1.0");
+    ASSERT_TRUE(d.isEqual(e));
+}
+
 TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundDown) {
     double doubleMax = DBL_MAX;
     Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardNegative);
@@ -224,6 +231,18 @@ TEST_F(Decimal128Test, TestDoubleConstructorMinNeg) {
     Decimal128 d(min);
     Decimal128 e("-2.22507385850720E-308");
     ASSERT_TRUE(d.isEqual(e));
+}
+
+TEST_F(Decimal128Test, TestDoubleConstructorInfinity) {
+    double dbl = std::numeric_limits<double>::infinity();
+    Decimal128 d(dbl);
+    ASSERT_TRUE(d.isInfinite());
+}
+
+TEST_F(Decimal128Test, TestDoubleConstructorNaN) {
+    double dbl = std::numeric_limits<double>::quiet_NaN();
+    Decimal128 d(dbl);
+    ASSERT_TRUE(d.isNaN());
 }
 
 TEST_F(Decimal128Test, TestStringConstructorInRange) {
@@ -726,6 +745,70 @@ TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
     Decimal128 d2("+INFINITY");
     bool result = d1.isLessEqual(d2);
     ASSERT_TRUE(result);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetPosMin) {
+    Decimal128 d = Decimal128::getPosMin();
+    uint64_t high = 0;
+    uint64_t low = 1;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetPosMax) {
+    Decimal128 d = Decimal128::getPosMax();
+    uint64_t high = 6917508178773903296ull;
+    uint64_t low = 4003012203950112767ull;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetNegMin) {
+    Decimal128 d = Decimal128::getNegMin();
+    uint64_t high = 16140880215628679104ull;
+    uint64_t low = 4003012203950112767ull;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetNegMax) {
+    Decimal128 d = Decimal128::getNegMax();
+    uint64_t high = 9223372036854775808ull;
+    uint64_t low = 1ull;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetPosInfinity) {
+    Decimal128 d = Decimal128::getPosInfinity();
+    uint64_t high = 8646911284551352320ull;
+    uint64_t low = 0;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetNegInfinity) {
+    Decimal128 d = Decimal128::getNegInfinity();
+    uint64_t high = 17870283321406128128ull;
+    uint64_t low = 0;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetPosNaN) {
+    Decimal128 d = Decimal128::getPosNaN();
+    uint64_t high = 8935141660703064064ull;
+    uint64_t low = 0;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
+}
+
+TEST_F(Decimal128Test, TestDecimal128GetNegNaN) {
+    Decimal128 d = Decimal128::getNegNaN();
+    uint64_t high = 18158513697557839872ull;
+    uint64_t low = 0;
+    ASSERT_EQUALS(d.getValue().high64, high);
+    ASSERT_EQUALS(d.getValue().low64, low);
 }
 
 }  // namespace mongo

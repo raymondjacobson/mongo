@@ -91,8 +91,10 @@ enum BSONType {
     bsonTimestamp = 17,
     /** 64 bit integer */
     NumberLong = 18,
+    /** 128 bit decimal */
+    NumberDecimal = 19,
     /** max type that is not MaxKey */
-    JSTypeMax = 18,
+    JSTypeMax = 19,
     /** larger than all other types */
     MaxKey = 127
 };
@@ -131,6 +133,7 @@ inline int canonicalizeBSONType(BSONType type) {
             return 0;
         case jstNULL:
             return 5;
+        case NumberDecimal:
         case NumberDouble:
         case NumberInt:
         case NumberLong:
