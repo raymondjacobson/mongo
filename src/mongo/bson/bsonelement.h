@@ -40,6 +40,7 @@
 #include "mongo/bson/oid.h"
 #include "mongo/bson/timestamp.h"
 #include "mongo/platform/cstdint.h"
+#include "mongo/platform/decimal128.h"
 
 namespace mongo {
     class BSONObj;
@@ -81,7 +82,7 @@ namespace mongo {
         }
         Date_t Date()               const { return chk(mongo::Date).date(); }
         double Number()             const { return chk(isNumber()).number(); }
-        // DECIMAL_DATA_TYPE
+        Decimal128 Decimal()        const { return chk(NumberDecimal)._numberDecimal(); }
         double Double()             const { return chk(NumberDouble)._numberDouble(); }
         long long Long()            const { return chk(NumberLong)._numberLong(); }
         int Int()                   const { return chk(NumberInt)._numberInt(); }
@@ -238,7 +239,10 @@ namespace mongo {
             return ConstDataView(value()).read<LittleEndian<int>>();
         }
 
-        // DECIMAL_DATA_TYPE add _numberDecimal or something
+        /** Return decimal128 value for this field. MUST be NumberDecimal type. */
+        Decimal128 _numberDecimal() const {
+            return ConstDataView(value()).read<LittleEndian<class Decimal128>>();
+        }
 
         /** Return long long value for this field. MUST be NumberLong type. */
         long long _numberLong() const {
@@ -259,7 +263,8 @@ namespace mongo {
          *  very small doubles -> LLONG_MIN  */
         long long safeNumberLong() const;
 
-        // DECIMAL_DATA_TYPE, add numberDecimal or something
+        /** Retrieve decimal value for the element safely. */
+        Decimal128 numberDecimal() const;
 
         /** Retrieve the numeric value of the element.  If not of a numeric type, returns 0.
             Note: casts to double, data loss may occur with large (>52 bit) NumberLong values.
@@ -576,6 +581,8 @@ namespace mongo {
             return _numberLong() != 0;
         case NumberDouble:
             return _numberDouble() != 0;
+        case NumberDecimal:
+            return _numberDecimal().isNotEqual(Decimal128(0));
         case NumberInt:
             return _numberInt() != 0;
         case mongo::Bool:
@@ -596,7 +603,7 @@ namespace mongo {
         switch( type() ) {
         case NumberLong:
         case NumberDouble:
-           // DECIMAL_DATA_TYPE
+        case NumberDecimal:
         case NumberInt:
             return true;
         default:
@@ -609,7 +616,7 @@ namespace mongo {
         case NumberLong:
         case NumberDouble:
         case NumberInt:
-           // DECIMAL_DATA_TYPE
+        case NumberDecimal:
         case mongo::String:
         case mongo::Bool:
         case mongo::Date:
@@ -617,6 +624,21 @@ namespace mongo {
             return true;
         default:
             return false;
+        }
+    }
+
+    inline Decimal128 BSONElement::numberDecimal() const {
+        switch( type() ) {
+        case NumberDouble:
+            return Decimal128(_numberDouble());
+        case NumberInt:
+            return Decimal128(_numberInt());
+        case NumberLong:
+            return Decimal128(_numberLong());
+        case NumberDecimal:
+            return _numberDecimal();
+        default:
+            return 0;
         }
     }
 
@@ -628,7 +650,8 @@ namespace mongo {
             return _numberInt();
         case NumberLong:
             return _numberLong();
-            // DECIMAL_DATA_TYPE
+        case NumberDecimal:
+            return _numberDecimal().toDouble();
         default:
             return 0;
         }
@@ -643,7 +666,8 @@ namespace mongo {
             return _numberInt();
         case NumberLong:
             return (int) _numberLong();
-            // DECIMAL_DATA_TYPE
+        case NumberDecimal:
+            return _numberDecimal().toInt();
         default:
             return 0;
         }
@@ -658,22 +682,22 @@ namespace mongo {
             return _numberInt();
         case NumberLong:
             return _numberLong();
-            // DECIMAL_DATA_TYPE
+        case NumberDecimal:
+            return _numberDecimal().toLong();
         default:
             return 0;
         }
     }
 
-    /** Like numberLong() but with well-defined behavior for doubles that
+    /** Like numberLong() but with well-defined behavior for doubles and decimals that
      *  are NaNs, or too large/small to be represented as long longs.
      *  NaNs -> 0
      *  very large doubles -> LLONG_MAX
      *  very small doubles -> LLONG_MIN  */
     inline long long BSONElement::safeNumberLong() const {
-        double d;
         switch( type() ) {
-        case NumberDouble:
-            d = numberDouble();
+        case NumberDouble: {
+            double d = numberDouble();
             if ( std::isnan( d ) ){
                 return 0;
             }
@@ -683,6 +707,19 @@ namespace mongo {
             if ( d < std::numeric_limits<long long>::min() ){
                 return std::numeric_limits<long long>::min();
             }
+        }
+        case NumberDecimal: {
+            Decimal128 d = numberDecimal();
+            if (d.isNaN()) {
+                return 0;
+            }
+            if (d.isGreater(Decimal128(std::numeric_limits<long long>::max()))) {
+                return std::numeric_limits<long long>::max();
+            }
+            if (d.isLess(Decimal128(std::numeric_limits<long long>::min()))) {
+                return std::numeric_limits<long long>::min();
+            }
+        }
         default:
             return numberLong();
         }

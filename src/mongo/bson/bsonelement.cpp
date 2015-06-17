@@ -985,6 +985,7 @@ namespace mongo {
             boost::hash_combine(hash, elem.date().asInt64());
             break;
 
+        case mongo::NumberDecimal:
         case mongo::NumberDouble:
         case mongo::NumberLong:
         case mongo::NumberInt: {
@@ -994,6 +995,11 @@ namespace mongo {
             // NumberLongs > 2**53, but that is ok since the hash will still be the same for
             // equal numbers and is still likely to be different for different numbers.
             // SERVER-16851
+            // TODO: Addition of Decimal128 also converts to NumberDouble. This is
+            // functionally correct, but doesn't make use of the fact that some different
+            // dec128 values will have the same hash (the same doubles will represent them).
+            // Another idea would be to cast all types to decimal128 (solving the NumberLong issue
+            // as a side effect), but that would be slow.
             const double dbl = elem.numberDouble();
             if (std::isnan(dbl)) {
                 boost::hash_combine(hash, std::numeric_limits<double>::quiet_NaN());

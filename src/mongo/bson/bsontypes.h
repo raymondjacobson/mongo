@@ -86,16 +86,17 @@ namespace mongo {
         /** javascript code that can execute on the database server, with SavedContext */
         CodeWScope=15,
         /** 32 bit signed integer */
-        NumberInt = 16,
+        NumberInt=16,
         /** Two 32 bit signed integers */
-        bsonTimestamp = 17,
+        bsonTimestamp=17,
         /** 64 bit integer */
-        NumberLong = 18,
+        NumberLong=18,
+        /** 128 bit decimal */
+        NumberDecimal=19,
         /** max type that is not MaxKey */
-        JSTypeMax=18,
+        JSTypeMax=19,
         /** larger than all other types */
         MaxKey=127
-        // DECIMAL_DATA_TYPE
     };
 
     /**
@@ -132,10 +133,10 @@ namespace mongo {
             return 0;
         case jstNULL:
             return 5;
+        case NumberDecimal:
         case NumberDouble:
-        case NumberInt:
         case NumberLong:
-           // DECIMAL_DATA_TYPE
+        case NumberInt:
             return 10;
         case mongo::String:
         case Symbol:
