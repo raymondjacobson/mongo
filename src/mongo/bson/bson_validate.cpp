@@ -220,13 +220,15 @@ namespace mongo {
 
             case NumberDouble:
             case NumberLong:
-                // DECIMAL_DATA_TYPE add case?
             case bsonTimestamp:
             case Date:
                 if ( !buffer->skip( sizeof(int64_t) ) )
                     return makeError("invalid bson", idElem);
                 return Status::OK();
-
+            case NumberDecimal:
+                if (!buffer->skip(sizeof(int64_t) * 2))
+                    return makeError("Invalid bson", idElem);
+                return Status::OK();
             case DBRef:
                 status = buffer->readUTF8String( NULL );
                 if ( !status.isOK() )
