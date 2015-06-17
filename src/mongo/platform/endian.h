@@ -33,6 +33,7 @@
 #include <type_traits>
 
 #include "mongo/config.h"
+#include "mongo/platform/decimal128.h"
 
 #pragma push_macro("MONGO_UINT16_SWAB")
 #pragma push_macro("MONGO_UINT32_SWAB")
@@ -412,6 +413,39 @@ struct ByteOrderConverter<double> {
         std::memcpy(&temp, &t, sizeof(t));
         temp = le64toh(temp);
         std::memcpy(&t, &temp, sizeof(t));
+        return t;
+    }
+};
+
+template <>
+struct ByteOrderConverter<Decimal128> {
+    typedef Decimal128 T;
+
+    inline static T nativeToBig(T t) {
+        Decimal128::Decimal128Value decimalValue = t.getValue();
+        ByteOrderConverter<uint64_t>::nativeToBig(decimalValue.low64);
+        ByteOrderConverter<uint64_t>::nativeToBig(decimalValue.high64);
+        return t;
+    }
+
+    inline static T bigToNative(T t) {
+        Decimal128::Decimal128Value decimalValue = t.getValue();
+        ByteOrderConverter<uint64_t>::bigToNative(decimalValue.low64);
+        ByteOrderConverter<uint64_t>::bigToNative(decimalValue.high64);
+        return t;
+    }
+
+    inline static T nativeToLittle(T t) {
+        Decimal128::Decimal128Value decimalValue = t.getValue();
+        ByteOrderConverter<uint64_t>::nativeToLittle(decimalValue.low64);
+        ByteOrderConverter<uint64_t>::nativeToLittle(decimalValue.high64);
+        return t;
+    }
+
+    inline static T littleToNative(T t) {
+        Decimal128::Decimal128Value decimalValue = t.getValue();
+        ByteOrderConverter<uint64_t>::littleToNative(decimalValue.low64);
+        ByteOrderConverter<uint64_t>::littleToNative(decimalValue.high64);
         return t;
     }
 };

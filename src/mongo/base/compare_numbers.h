@@ -29,6 +29,7 @@
 
 #include <cmath>
 
+#include "mongo/platform/decimal128.h"
 #include "mongo/util/assert_util.h"
 
 namespace mongo {
@@ -96,6 +97,66 @@ inline int compareLongToDouble(long long lhs, double rhs) {
 inline int compareDoubleToLong(double lhs, long long rhs) {
     // Only implement the real logic once.
     return -compareLongToDouble(rhs, lhs);
+}
+
+/** Decimal type comparisons
+ * These following cases need support:
+ * 1. decimal to decimal: directly compare (enforce ordering: NaN < -Inf < N < +Inf)
+ * 2. decimal to int: convert int to decimal and compare
+ * 3. int to decimal: return -1 * case2(rhs, lhs)
+ * 4. decimal to long: convert long to decimal and compare
+ * 5. long to decimal: return -1 * case4(rhs, lhs)
+ * 6. decimal to double: convert double to decimal (maintaining only 15 decimal
+ *    digits of precision as specified in mongo/platform/decimal128.h) and compare
+ * 7. double to decimal: return -1 * case6(rhs, lhs)
+ */
+
+// Case 1: Compare two decimal values, but enforce MongoDB's total ordering convention
+inline int compareDecimals(Decimal128 lhs, Decimal128 rhs) {
+    // When we're comparing, lhs is always a decimal, which means more often then not
+    // the rhs will be less than the lhs (decimal type has the largest capacity)
+    if (lhs.isGreater(rhs))
+        return 1;
+    if (lhs.isLess(rhs))
+        return -1;
+    if (lhs.isEqual(rhs))
+        return 0;
+
+    // If none of the above cases returned, lhs or rhs must be NaN.
+    if (lhs.isNaN())
+        return (rhs.isNaN() ? 0 : -1);
+    dassert(rhs.isNaN());
+    return 1;
+}
+
+// Case 2
+inline int compareDecimals(Decimal128 lhs, int rhs) {
+    return compareDecimals(lhs, Decimal128(rhs));
+}
+
+// Case 3
+inline int compareDecimals(int lhs, Decimal128 rhs) {
+    return -compareDecimals(rhs, Decimal128(lhs));
+}
+
+// Case 4
+inline int compareDecimals(Decimal128 lhs, long long rhs) {
+    return compareDecimals(lhs, Decimal128(rhs));
+}
+
+// Case 5
+inline int compareDecimals(long long lhs, Decimal128 rhs) {
+    return -compareDecimals(rhs, Decimal128(lhs));
+}
+
+// Case 6
+inline int compareDecimals(Decimal128 lhs, double rhs) {
+    return compareDecimals(lhs, Decimal128(rhs));
+}
+
+// Case 7
+inline int compareDecimals(double lhs, Decimal128 rhs) {
+    return -compareDecimals(rhs, Decimal128(lhs));
 }
 
 }  // namespace mongo

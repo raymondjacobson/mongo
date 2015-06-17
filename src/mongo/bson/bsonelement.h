@@ -54,7 +54,6 @@ typedef BSONObjBuilder bob;
 /* l and r MUST have same type when called: check that first. */
 int compareElementValues(const BSONElement& l, const BSONElement& r);
 
-
 /** BSONElement represents an "element" in a BSONObj.  So for the object { a : 3, b : "abc" },
     'a : 3' is the first element (key+value).
 
@@ -86,6 +85,9 @@ public:
     }
     double Number() const {
         return chk(isNumber()).number();
+    }
+    Decimal128 Decimal() const {
+        return chk(NumberDecimal)._numberDecimal();
     }
     double Double() const {
         return chk(NumberDouble)._numberDouble();
@@ -126,6 +128,9 @@ public:
     }
     void Val(long long& v) const {
         v = Long();
+    }
+    void Val(Decimal128& v) const {
+        v = Decimal128();
     }
     void Val(bool& v) const {
         v = Bool();
@@ -289,6 +294,11 @@ public:
         return ConstDataView(value()).read<LittleEndian<int>>();
     }
 
+    /** Return decimal128 value for this field. MUST be NumberDecimal type. */
+    Decimal128 _numberDecimal() const {
+        return ConstDataView(value()).read<LittleEndian<class Decimal128>>();
+    }
+
     /** Return long long value for this field. MUST be NumberLong type. */
     long long _numberLong() const {
         return ConstDataView(value()).read<LittleEndian<long long>>();
@@ -307,6 +317,9 @@ public:
      *  very large doubles -> LLONG_MAX
      *  very small doubles -> LLONG_MIN  */
     long long safeNumberLong() const;
+
+    /** Retrieve decimal value for the element safely. */
+    Decimal128 numberDecimal() const;
 
     /** Retrieve the numeric value of the element.  If not of a numeric type, returns 0.
         Note: casts to double, data loss may occur with large (>52 bit) NumberLong values.
@@ -630,6 +643,8 @@ inline bool BSONElement::trueValue() const {
             return _numberLong() != 0;
         case NumberDouble:
             return _numberDouble() != 0;
+        case NumberDecimal:
+            return _numberDecimal().isNotEqual(Decimal128(0));
         case NumberInt:
             return _numberInt() != 0;
         case mongo::Bool:
@@ -638,9 +653,7 @@ inline bool BSONElement::trueValue() const {
         case jstNULL:
         case Undefined:
             return false;
-
-        default:
-            ;
+        default:;
     }
     return true;
 }
@@ -650,6 +663,7 @@ inline bool BSONElement::isNumber() const {
     switch (type()) {
         case NumberLong:
         case NumberDouble:
+        case NumberDecimal:
         case NumberInt:
             return true;
         default:
@@ -662,6 +676,7 @@ inline bool BSONElement::isSimpleType() const {
         case NumberLong:
         case NumberDouble:
         case NumberInt:
+        case NumberDecimal:
         case mongo::String:
         case mongo::Bool:
         case mongo::Date:
@@ -669,6 +684,21 @@ inline bool BSONElement::isSimpleType() const {
             return true;
         default:
             return false;
+    }
+}
+
+inline Decimal128 BSONElement::numberDecimal() const {
+    switch (type()) {
+        case NumberDouble:
+            return Decimal128(_numberDouble());
+        case NumberInt:
+            return Decimal128(_numberInt());
+        case NumberLong:
+            return Decimal128(_numberLong());
+        case NumberDecimal:
+            return _numberDecimal();
+        default:
+            return 0;
     }
 }
 
@@ -680,6 +710,8 @@ inline double BSONElement::numberDouble() const {
             return _numberInt();
         case NumberLong:
             return _numberLong();
+        case NumberDecimal:
+            return _numberDecimal().toDouble();
         default:
             return 0;
     }
@@ -695,6 +727,8 @@ inline int BSONElement::numberInt() const {
             return _numberInt();
         case NumberLong:
             return (int)_numberLong();
+        case NumberDecimal:
+            return _numberDecimal().toInt();
         default:
             return 0;
     }
@@ -709,21 +743,22 @@ inline long long BSONElement::numberLong() const {
             return _numberInt();
         case NumberLong:
             return _numberLong();
+        case NumberDecimal:
+            return _numberDecimal().toLong();
         default:
             return 0;
     }
 }
 
-/** Like numberLong() but with well-defined behavior for doubles that
+/** Like numberLong() but with well-defined behavior for doubles and decimals that
  *  are NaNs, or too large/small to be represented as long longs.
  *  NaNs -> 0
- *  very large doubles -> LLONG_MAX
- *  very small doubles -> LLONG_MIN  */
+ *  very large values -> LLONG_MAX
+ *  very small values -> LLONG_MIN  */
 inline long long BSONElement::safeNumberLong() const {
-    double d;
     switch (type()) {
-        case NumberDouble:
-            d = numberDouble();
+        case NumberDouble: {
+            double d = numberDouble();
             if (std::isnan(d)) {
                 return 0;
             }
@@ -733,6 +768,19 @@ inline long long BSONElement::safeNumberLong() const {
             if (d < std::numeric_limits<long long>::min()) {
                 return std::numeric_limits<long long>::min();
             }
+        }
+        case NumberDecimal: {
+            Decimal128 d = numberDecimal();
+            if (d.isNaN()) {
+                return 0;
+            }
+            if (d.isGreater(Decimal128(std::numeric_limits<long long>::max()))) {
+                return std::numeric_limits<long long>::max();
+            }
+            if (d.isLess(Decimal128(std::numeric_limits<long long>::min()))) {
+                return std::numeric_limits<long long>::min();
+            }
+        }
         default:
             return numberLong();
     }

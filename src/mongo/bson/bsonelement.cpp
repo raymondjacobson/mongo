@@ -90,6 +90,25 @@ string BSONElement::jsonString(JsonStringFormat format, bool includeFieldNames, 
                 massert(10311, message.c_str(), false);
             }
             break;
+        case NumberDecimal:
+            if (format == TenGen)
+                s << "NumberDecimal(";
+            else
+                s << "{ \"$numberDecimal\" : \"";
+            // Recognize again that this is not valid JSON according to RFC-4627.
+            // Also, treat -NaN and +NaN as the same thing for MongoDB.
+            if (numberDecimal().isNaN()) {
+                s << "NaN";
+            } else if (numberDecimal().isInfinite()) {
+                s << (numberDecimal().isNegative() ? "-Infinity" : "Infinity");
+            } else {
+                s << numberDecimal().toString();
+            }
+            if (format == TenGen)
+                s << ")";
+            else
+                s << "\" }";
+            break;
         case mongo::Bool:
             s << (boolean() ? "true" : "false");
             break;
@@ -397,7 +416,6 @@ int BSONElement::woCompare(const BSONElement& e, bool considerFieldName) const {
     return x;
 }
 
-
 BSONObj BSONElement::embeddedObjectUserCheck() const {
     if (MONGO_likely(isABSONObj()))
         return BSONObj(value());
@@ -469,6 +487,9 @@ int BSONElement::size(int maxLen) const {
         case NumberDouble:
         case NumberLong:
             x = 8;
+            break;
+        case NumberDecimal:
+            x = 16;
             break;
         case jstOID:
             x = OID::kOIDSize;
@@ -554,6 +575,9 @@ int BSONElement::size() const {
         case NumberLong:
             x = 8;
             break;
+        case NumberDecimal:
+            x = 16;
+            break;
         case jstOID:
             x = OID::kOIDSize;
             break;
@@ -635,6 +659,9 @@ void BSONElement::toString(StringBuilder& s, bool includeFieldName, bool full, i
             break;
         case NumberInt:
             s << _numberInt();
+            break;
+        case NumberDecimal:
+            s << _numberDecimal().toString();
             break;
         case mongo::Bool:
             s << (boolean() ? "true" : "false");
@@ -766,6 +793,14 @@ bool BSONElement::coerce<double>(double* out) const {
 }
 
 template <>
+bool BSONElement::coerce<Decimal128>(Decimal128* out) const {
+    if (!isNumber())
+        return false;
+    *out = numberDecimal();
+    return true;
+}
+
+template <>
 bool BSONElement::coerce<bool>(bool* out) const {
     *out = trueValue();
     return true;
@@ -867,16 +902,16 @@ int compareElementValues(const BSONElement& l, const BSONElement& r) {
                 return a == b ? 0 : 1;
             }
 
-        case NumberInt: {
-            // All types can precisely represent all NumberInts, so it is safe to simply convert to
-            // whatever rhs's type is.
+        case NumberDecimal: {
             switch (r.type()) {
+                case NumberDecimal:
+                    return compareDecimals(l._numberDecimal(), r._numberDecimal());
                 case NumberInt:
-                    return compareInts(l._numberInt(), r._numberInt());
+                    return compareDecimals(l._numberDecimal(), r._numberInt());
                 case NumberLong:
-                    return compareLongs(l._numberInt(), r._numberLong());
+                    return compareDecimals(l._numberDecimal(), r._numberLong());
                 case NumberDouble:
-                    return compareDoubles(l._numberInt(), r._numberDouble());
+                    return compareDecimals(l._numberDecimal(), r._numberDouble());
                 default:
                     invariant(false);
             }
@@ -890,6 +925,8 @@ int compareElementValues(const BSONElement& l, const BSONElement& r) {
                     return compareLongs(l._numberLong(), r._numberInt());
                 case NumberDouble:
                     return compareLongToDouble(l._numberLong(), r._numberDouble());
+                case NumberDecimal:
+                    return compareDecimals(l._numberLong(), r._numberDecimal());
                 default:
                     invariant(false);
             }
@@ -903,6 +940,25 @@ int compareElementValues(const BSONElement& l, const BSONElement& r) {
                     return compareDoubles(l._numberDouble(), r._numberInt());
                 case NumberLong:
                     return compareDoubleToLong(l._numberDouble(), r._numberLong());
+                case NumberDecimal:
+                    return compareDecimals(l._numberDouble(), r._numberDecimal());
+                default:
+                    invariant(false);
+            }
+        }
+
+        case NumberInt: {
+            // All types can precisely represent all NumberInts, so it is safe to simply convert to
+            // whatever rhs's type is.
+            switch (r.type()) {
+                case NumberInt:
+                    return compareInts(l._numberInt(), r._numberInt());
+                case NumberLong:
+                    return compareLongs(l._numberInt(), r._numberLong());
+                case NumberDouble:
+                    return compareDoubles(l._numberInt(), r._numberDouble());
+                case NumberDecimal:
+                    return compareDecimals(l._numberInt(), r._numberDecimal());
                 default:
                     invariant(false);
             }
@@ -995,6 +1051,7 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
             boost::hash_combine(hash, elem.date().asInt64());
             break;
 
+        case mongo::NumberDecimal:
         case mongo::NumberDouble:
         case mongo::NumberLong:
         case mongo::NumberInt: {

@@ -219,6 +219,11 @@ Status validateElementInfo(Buffer* buffer, ValidationState::State* nextState, BS
                 return makeError("invalid bson", idElem);
             return Status::OK();
 
+        case NumberDecimal:
+            if (!buffer->skip(sizeof(int64_t) * 2))
+                return makeError("Invalid bson", idElem);
+            return Status::OK();
+
         case DBRef:
             status = buffer->readUTF8String(NULL);
             if (!status.isOK())
