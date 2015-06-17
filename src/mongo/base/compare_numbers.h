@@ -108,12 +108,16 @@ namespace mongo {
     inline int compareDecimals(Decimal128 lhs, Decimal128 rhs) {
         // When we're comparing, lhs is always a decimal, which means more often then not
         // the rhs will be less than the lhs (decimal type has the largest capacity)
-        if (lhs.isGreater(rhs)) return 1;
-        if (lhs.isLess(rhs)) return -1;
-        if (lhs.isEqual(rhs)) return 0;
+        if (lhs.isGreater(rhs))
+            return 1;
+        if (lhs.isLess(rhs))
+            return -1;
+        if (lhs.isEqual(rhs))
+            return 0;
 
         // If none of the above cases returned, lhs or rhs must be NaN.
-        if (lhs.isNaN()) return (rhs.isNaN() ? 0 : -1);
+        if (lhs.isNaN())
+            return (rhs.isNaN() ? 0 : -1);
         dassert(rhs.isNaN());
         return 1;
     }

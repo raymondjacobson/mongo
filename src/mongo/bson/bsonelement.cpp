@@ -58,7 +58,6 @@ namespace mongo {
         case Symbol:
             s << '"' << escape( string(valuestr(), valuestrsize()-1) ) << '"';
             break;
-            // DECIMAL_DATA_TYPE toString case
         case NumberLong:
             if (format == TenGen) {
                 s << "NumberLong(" << _numberLong() << ")";
@@ -72,9 +71,6 @@ namespace mongo {
                 s << "NumberInt(" << _numberInt() << ")";
                 break;
             }
-
-            // DECIMAL_DATA_TYPE case
-
         case NumberDouble:
             if ( number() >= -std::numeric_limits< double >::max() &&
                  number() <= std::numeric_limits< double >::max() ) {
@@ -96,6 +92,25 @@ namespace mongo {
                 string message = ss.str();
                 massert( 10311 ,  message.c_str(), false );
             }
+            break;
+        case NumberDecimal:
+            if (format == TenGen)
+                s << "NumberDecimal(";
+            else
+                s << "{ \"$numberDecimal\" : \"";
+            // Recognize again that this is not valid JSON according to RFC-4627.
+            // Also, treat -NaN and +NaN as the same thing for MongoDB.
+            if (numberDecimal().isNan()) {
+                s << "NaN";
+            } else if (numberDecimal().isInfinity()) {
+                s << (numberDecimal().isNegative() ? "-Infinity" : "Infinity");
+            } else {
+                s << numberDecimal().toString();
+            }
+            if (format == TenGen)
+                s << ")";
+            else
+                s << "\" }";
             break;
         case mongo::Bool:
             s << ( boolean() ? "true" : "false" );
@@ -473,8 +488,10 @@ namespace mongo {
         case mongo::Date:
         case NumberDouble:
         case NumberLong:
-            // DECIMAL_DATA_TYPE case
             x = 8;
+            break;
+        case NumberDecimal:
+            x = 16;
             break;
         case jstOID:
             x = OID::kOIDSize;
@@ -554,8 +571,10 @@ namespace mongo {
         case mongo::Date:
         case NumberDouble:
         case NumberLong:
-            // DECIMAL_DATA_TYPE case
             x = 8;
+            break;
+        case NumberDecimal:
+            x = 16;
             break;
         case jstOID:
             x = OID::kOIDSize;
@@ -643,7 +662,9 @@ namespace mongo {
         case NumberInt:
             s << _numberInt();
             break;
-            // DECIMAL_DATA_TYPE case
+        case NumberDecimal:
+            s << _numberDecimal().toString();
+            break;
         case mongo::Bool:
             s << ( boolean() ? "true" : "false" );
             break;
@@ -769,6 +790,13 @@ namespace mongo {
         if ( !isNumber() )
             return false;
         *out = numberDouble();
+        return true;
+    }
+
+    template<> bool BSONElement::coerce<Decimal128>( Decimal128* out) const {
+        if ( !isNumber() )
+            return false;
+        *out = numberDecimal();
         return true;
     }
 
