@@ -53,7 +53,7 @@ Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
     invariant(false);
 }
 
-const Decimal128::Decimal128Value& Decimal128::getValue() const {
+Decimal128::Decimal128Value Decimal128::getValue() const {
     invariant(false);
 }
 

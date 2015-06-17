@@ -6,7 +6,6 @@ lib_deps = [
     '$BUILD_DIR/mongo/base',
 ]
 source_files = [
-    'decimal128.cpp',
     'decimal128_knobs.cpp',
     'posix_fadvise.cpp',
     'process_id.cpp',
