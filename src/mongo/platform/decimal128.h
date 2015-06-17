@@ -38,20 +38,21 @@ namespace mongo {
 /**
  * Wrapper class for the MongoDB Decimal128 data type. Sample usage:
  *     Decimal128 d("+10.0");
- *     std::cout << d.toString << std::endl;
+ *     std::cout << d.toString() << std::endl;
  */
 class Decimal128 {
 public:
     /**
-      * This struct holds the raw data for IEEE 754-2008 data types
-      */
+     * This struct holds the raw data for IEEE 754-2008 data types
+     */
     struct Decimal128Value {
         uint64_t high64;
         uint64_t low64;
 
-        /** Constructors for Decimal128Value
-          * Default to zero, copy constructor, and from size 2 uint64_t array
-          */
+        /**
+         * Constructors for Decimal128Value
+         * Default to zero, copy constructor, and from size 2 uint64_t array
+         */
         Decimal128Value();
         Decimal128Value(const Decimal128Value& dval);
         Decimal128Value(const uint64_t dval[2]);
@@ -65,39 +66,43 @@ public:
         kRoundTiesToAway = 4
     };
 
-    /** Default initialize Decimal128's value struct to zero
-      */
+    /**
+     * Default initialize Decimal128's value struct to zero
+     */
     Decimal128();
+
     /**
-      * This constructor takes in a raw decimal128 type, which consists of two
-      * uint64_t's. This class performs an endian check on the system to ensure
-      * that the Decimal128Value.high64 represents the higher 64 bits.
-      */
-    Decimal128(Decimal128Value value);
-    Decimal128(int32_t i);
-    Decimal128(int64_t l);
+     * This constructor takes in a raw decimal128 type, which consists of two
+     * uint64_t's. This class performs an endian check on the system to ensure
+     * that the Decimal128Value.high64 represents the higher 64 bits.
+     */
+    Decimal128(Decimal128Value dec128Value);
+    Decimal128(int32_t int32Value);
+    Decimal128(int64_t int64Value);
+
     /**
-      * This constructor takes a double and constructs a Decimal128 object
-      * given a roundMode with a fixed precision of 15. Doubles can only
-      * properly represent a decimal precision of 15-17 digits.
-      * The general idea is to quantize the direct double->dec128 conversion
-      * with a quantum of 1E(-15 +/- base10 exponent equivalent of the double).
-      * To do this, we find the smallest (abs value) base 10 exponent greater
-      * than the double's base 2 exp and shift the quantizer's exp accordingly.
-      */
-    Decimal128(double d, RoundingMode roundMode = kRoundTiesToEven);
+     * This constructor takes a double and constructs a Decimal128 object
+     * given a roundMode with a fixed precision of 15. Doubles can only
+     * properly represent a decimal precision of 15-17 digits.
+     * The general idea is to quantize the direct double->dec128 conversion
+     * with a quantum of 1E(-15 +/- base10 exponent equivalent of the double).
+     * To do this, we find the smallest (abs value) base 10 exponent greater
+     * than the double's base 2 exp and shift the quantizer's exp accordingly.
+     */
+    Decimal128(double doubleValue, RoundingMode roundMode = kRoundTiesToEven);
+
     /**
-      * This constructor takes a string and constructs a Decimal128 object from it.
-      * Inputs larger than 34 digits of precision are rounded according to the
-      * specified rounding mode. The following (and variations) are all accepted:
-      * "+2.02E200"
-      * "2.02E+200"
-      * "-202E-500"
-      * "somethingE200" --> NaN
-      * "200E9999999999" --> +Inf
-      * "-200E9999999999" --> -Inf
-      */
-    Decimal128(std::string s, RoundingMode roundMode = kRoundTiesToEven);
+     * This constructor takes a string and constructs a Decimal128 object from it.
+     * Inputs larger than 34 digits of precision are rounded according to the
+     * specified rounding mode. The following (and variations) are all accepted:
+     * "+2.02E200"
+     * "2.02E+200"
+     * "-202E-500"
+     * "somethingE200" --> NaN
+     * "200E9999999999" --> +Inf
+     * "-200E9999999999" --> -Inf
+     */
+    Decimal128(std::string stringValue, RoundingMode roundMode = kRoundTiesToEven);
     ~Decimal128();
 
     /**
@@ -107,71 +112,69 @@ public:
     const Decimal128Value getValue() const;
 
     /**
-      * This set of functions converts a Decimal128 to a certain numeric type with a
-      * given rounding mode.
-      */
+     * This set of functions converts a Decimal128 to a certain numeric type with a
+     * given rounding mode.
+     */
     int32_t toInt(RoundingMode roundMode = kRoundTiesToEven);
     int64_t toLong(RoundingMode roundMode = kRoundTiesToEven);
     double toDouble(RoundingMode roundMode = kRoundTiesToEven);
+
     /**
-      * This function converts a Decimal128 to a string with syntax similar to the
-      * Decimal128 string constructor.
-      */
+     * This function converts a Decimal128 to a string with syntax similar to the
+     * Decimal128 string constructor.
+     */
     std::string toString();
 
     /**
-      * This set of functions converts a Decimal128 to a certain numerical type and
-      * returns a <value, boolean> pair where the boolean represents whether
-      * the conversion has been performed exactly. In other words, it returns
-      * whether the Decimal128 is truly an int, long, or double.
-      */
+     * This set of functions converts a Decimal128 to a certain numerical type and
+     * returns a <value, boolean> pair where the boolean represents whether
+     * the conversion has been performed exactly. In other words, it returns
+     * whether the Decimal128 is truly an int, long, or double.
+     */
     std::pair<int32_t, bool> isAndToInt(RoundingMode roundMode = kRoundTiesToEven);
     std::pair<int64_t, bool> isAndToLong(RoundingMode roundMode = kRoundTiesToEven);
     std::pair<double, bool> isAndToDouble(RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-      * This set of functions check whether a Decimal128 is NaN or +/- Inf
-      */
+     * This set of functions check whether a Decimal128 is NaN or +/- Inf
+     */
     bool isNaN();
     bool isInfinite();
     bool isNegative();
 
     /**
-      * This set of mathematical operation functions takes a single Decimal128 and a rounding
-      * mode parameter and performs the operation to the calling Decimal128. The calls are
-      * commutative in that a.add(b) is equivalent to b.add(a). When operations are performed
-      * so that the result triggers a precision greater than 34 decimal digits, the supplied
-      * rounding mode is invoked (defeaulting to kRoundTiesToEven). NaN and +/- Inf are valid
-      * arguments and return values.
-      */
-    Decimal128 add(const Decimal128& dec128, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 subtract(const Decimal128& dec128, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 multiply(const Decimal128& dec128, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 divide(const Decimal128& dec128, RoundingMode roundMode = kRoundTiesToEven);
+     * This set of mathematical operation functions takes a single Decimal128
+     * and a rounding mode parameter and performs the operation to the calling Decimal128.
+     * The calls are commutative in that a.add(b) is equivalent to b.add(a).
+     * When operation results trigger a precision greater than 34 decimal digits,
+     * the supplied rounding mode is invoked (defeaulting to kRoundTiesToEven).
+     * NaN and +/- Inf are valid arguments and return values.
+     */
+    Decimal128 add(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 subtract(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 multiply(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 divide(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
+
     /**
-      * This function quantizes the current decimal given a quantum reference
-      */
+     * This function quantizes the current decimal given a quantum reference
+     */
     Decimal128 quantize(const Decimal128& reference, RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-      * This set of comparison operations takes a single Decimal128 and returns a boolean
-      * noting the value of the comparison. These comparisons are not total ordered, but
-      * comply with the IEEE 754-2008 spec.
-      */
-    bool compareEqual(const Decimal128& dec128);
-    bool compareNotEqual(const Decimal128& dec128);
-    bool compareGreater(const Decimal128& dec128);
-    bool compareGreaterEqual(const Decimal128& dec128);
-    bool compareLess(const Decimal128& dec128);
-    bool compareLessEqual(const Decimal128& dec128);
-    /**
-      * This function returns the total ordering of two Decimal128 values using MongoDB
-      * standards (in order of least to greatest): NaN, -Inf, N, +Inf.
-      * The return value is true of this function if the current value is <= the argument.
-      */
-    bool totalOrder(const Decimal128& dec128);
+     * This set of comparison operations takes a single Decimal128 and returns a boolean
+     * noting the value of the comparison. These comparisons are not total ordered, but
+     * comply with the IEEE 754-2008 spec. The comparison returns true if the caller
+     * is <equal, notequal, greater, greaterequal, less, lessequal> the argument (rhs).
+     */
+    bool isEqual(const Decimal128& rhs);
+    bool isNotEqual(const Decimal128& rhs);
+    bool isGreater(const Decimal128& rhs);
+    bool isGreaterEqual(const Decimal128& rhs);
+    bool isLess(const Decimal128& rhs);
+    bool isLessEqual(const Decimal128& rhs);
 
 private:
     Decimal128Value _value;
 };
-}
+
+}  // namespace mongo

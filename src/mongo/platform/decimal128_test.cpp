@@ -130,91 +130,91 @@ TEST_F(Decimal128Test, TestDoubleConstructorQuant1) {
     double dbl = 0.1 / 10;
     Decimal128 d(dbl);
     Decimal128 e("0.01");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant2) {
     double dbl = 0.1 / 10000;
     Decimal128 d(dbl);
     Decimal128 e("0.00001");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant3) {
     double dbl = 0.1 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1E-19");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant4) {
     double dbl = 0.01 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
     Decimal128 d(dbl);
     Decimal128 e("100000000000000E+2");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant5) {
     double dbl = 0.0127;
     Decimal128 d(dbl);
     Decimal128 e("0.0127");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant6) {
     double dbl = 1234567890.12709;
     Decimal128 d(dbl);
     Decimal128 e("1234567890.12709");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuant7) {
     double dbl = 0.1129857 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1.12985700000000E-19");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorZero) {
     double doubleZero = 0;
     Decimal128 d(doubleZero);
     Decimal128 e("0");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundDown) {
     double doubleMax = DBL_MAX;
     Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardNegative);
     Decimal128 e("179769313486231E294");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundUp) {
     double doubleMax = DBL_MAX;
     Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardPositive);
     Decimal128 e("179769313486232E294");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorMaxNeg) {
     double doubleMax = -1 * DBL_MAX;
     Decimal128 d(doubleMax);
     Decimal128 e("-179769313486232E294");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorMin) {
     double min = DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("2.22507385850720E-308");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorMinNeg) {
     double min = -DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("-2.22507385850720E-308");
-    ASSERT_TRUE(d.compareEqual(e));
+    ASSERT_TRUE(d.isEqual(e));
 }
 
 TEST_F(Decimal128Test, TestStringConstructorInRange) {
@@ -596,157 +596,120 @@ TEST_F(Decimal128Test, TestDecimal128Quantizer) {
 TEST_F(Decimal128Test, TestDecimal128EqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
-    bool result = d1.compareEqual(d2);
+    bool result = d1.isEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128EqualCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("1.000000000");
-    bool result = d1.compareEqual(d2);
+    bool result = d1.isEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
     Decimal128 d1("0.1");
     Decimal128 d2("0.100000000000000005");
-    bool result = d1.compareEqual(d2);
+    bool result = d1.isEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.06E20");
-    bool result = d1.compareNotEqual(d2);
+    bool result = d1.isNotEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase2) {
     Decimal128 d1("-25.0001E20");
-    Decimal128 d2( "-25.00010E20");
-    bool result = d1.compareNotEqual(d2);
+    Decimal128 d2("-25.00010E20");
+    bool result = d1.isNotEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
-    bool result = d1.compareGreater(d2);
+    bool result = d1.isGreater(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
-    bool result = d1.compareGreater(d2);
+    bool result = d1.isGreater(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
-    bool result = d1.compareGreater(d2);
+    bool result = d1.isGreater(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
-    bool result = d1.compareGreaterEqual(d2);
+    bool result = d1.isGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
-    bool result = d1.compareGreaterEqual(d2);
+    bool result = d1.isGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
-    bool result = d1.compareGreaterEqual(d2);
+    bool result = d1.isGreaterEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
-    bool result = d1.compareLess(d2);
+    bool result = d1.isLess(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
-    bool result = d1.compareLess(d2);
+    bool result = d1.isLess(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
-    bool result = d1.compareLess(d2);
+    bool result = d1.isLess(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
-    bool result = d1.compareLessEqual(d2);
+    bool result = d1.isLessEqual(d2);
     ASSERT_FALSE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
-    bool result = d1.compareLessEqual(d2);
+    bool result = d1.isLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
 TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
-    bool result = d1.compareLessEqual(d2);
+    bool result = d1.isLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128TotalOrdering) {
-    Decimal128 posNaN("NaN");
-    Decimal128 negNaN("-NaN");
-    Decimal128 negInf("-INFINITY");
-    Decimal128 number("25.05");
-    Decimal128 posInf("+INFINITY");
-    ASSERT_TRUE(posNaN.totalOrder(negInf));
-    ASSERT_TRUE(negNaN.totalOrder(negInf));
-    ASSERT_TRUE(posNaN.totalOrder(number));
-    ASSERT_TRUE(negNaN.totalOrder(number));
-    ASSERT_TRUE(posNaN.totalOrder(posInf));
-    ASSERT_TRUE(negNaN.totalOrder(posInf));
-
-    ASSERT_TRUE(negInf.totalOrder(negInf));
-    ASSERT_TRUE(negInf.totalOrder(number));
-    ASSERT_TRUE(negInf.totalOrder(posInf));
-
-    ASSERT_TRUE(number.totalOrder(number));
-    ASSERT_TRUE(number.totalOrder(posInf));
-
-    ASSERT_TRUE(posInf.totalOrder(posInf));
-
-    ASSERT_TRUE(posNaN.totalOrder(negNaN));
-    ASSERT_TRUE(negNaN.totalOrder(posNaN));
-
-    ASSERT_FALSE(negInf.totalOrder(posNaN));
-    ASSERT_FALSE(negInf.totalOrder(negNaN));
-    ASSERT_FALSE(number.totalOrder(posNaN));
-    ASSERT_FALSE(number.totalOrder(negNaN));
-    ASSERT_FALSE(posInf.totalOrder(posNaN));
-    ASSERT_FALSE(posInf.totalOrder(negNaN));
-
-    ASSERT_FALSE(number.totalOrder(negInf));
-    ASSERT_FALSE(posInf.totalOrder(negInf));
-
-    ASSERT_FALSE(posInf.totalOrder(number));
-}
-}
+}  // namespace mongo
