@@ -26,7 +26,6 @@
  */
 
 #include "mongo/platform/basic.h"
-
 #include "mongo/platform/decimal128.h"
 
 #include <cmath>
@@ -34,7 +33,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-
 // _WCHAR_T is a built-in in C++, so we don't want the included C code to typedef it.
 #define _WCHAR_T
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
@@ -45,22 +43,14 @@
 #include "mongo/util/assert_util.h"
 
 namespace mongo {
-// Determine system's endian ordering in order to construct decimal
-// 128 values directly (inexpensively)
-#if MONGO_CONFIG_BYTE_ORDER == 1234
-int HIGH_64 = 1;
-int LOW_64 = 0;
-#else
-int HIGH_64 = 0;
-int LOW_64 = 1;
-#endif
 
 // The intel library uses long long for BID_UINT128s parts, which on some
 // systems is longer than a uint64_t.  We need to cast down, although there
 // will not be data loss.
 inline Decimal128::Decimal128Value libraryTypeToDecimal128Value(BID_UINT128 value) {
-    return Decimal128::Decimal128Value(static_cast<uint64_t>(value.w[HIGH_64]),
-                                       static_cast<uint64_t>(value.w[LOW_64]));
+    return Decimal128::Decimal128Value(
+        static_cast<uint64_t>(value.w[Decimal128::Decimal128Value::LOW_64]),
+        static_cast<uint64_t>(value.w[Decimal128::Decimal128Value::HIGH_64]));
 }
 
 /**
@@ -69,8 +59,8 @@ inline Decimal128::Decimal128Value libraryTypeToDecimal128Value(BID_UINT128 valu
  */
 BID_UINT128 decimal128ToLibraryType(Decimal128::Decimal128Value value) {
     BID_UINT128 dec128;
-    dec128.w[LOW_64] = value.low64;
-    dec128.w[HIGH_64] = value.high64;
+    dec128.w[Decimal128::Decimal128Value::LOW_64] = value.low64;
+    dec128.w[Decimal128::Decimal128Value::HIGH_64] = value.high64;
     return dec128;
 }
 
@@ -78,42 +68,32 @@ BID_UINT128 decimal128ToLibraryType(Decimal128::Decimal128Value value) {
  * This helper function takes an intel decimal 128 library type and quantizes
  * it to 15 decimal digits.
  * BID_UINT128 value : the value to quantize
- * int base10Exp : the base 10 exponent of value to scale the quantizer by
  * RoundingMode roundMode : the rounding mode to be used for quantizing operations
- * uint32_t idec_signaling_flags : flags for signaling imprecise results
+ * int base10Exp : the base 10 exponent of value to scale the quantizer by
+ * uint32_t* signalingFlags : flags for signaling imprecise results
  */
 BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
                                       Decimal128::RoundingMode roundMode,
                                       int base10Exp,
-                                      uint32_t& idec_signaling_flags) {
+                                      uint32_t* signalingFlags) {
     BID_UINT128 quantizerReference;
 
     // The quantizer starts at 1E-15
-    quantizerReference.w[HIGH_64] = 0x3022000000000000;
-    quantizerReference.w[LOW_64] = 0x0000000000000001;
+    quantizerReference.w[Decimal128::Decimal128Value::HIGH_64] = 0x3022000000000000;
+    quantizerReference.w[Decimal128::Decimal128Value::LOW_64] = 0x0000000000000001;
 
     // Scale the quantizer by the base 10 exponent. This is necessary to keep
     // the scale of the quantizer reference correct. For example, the decimal value 101
     // needs a different quantizer (1E-12) than the decimal value 1001 (1E-11) to yield
     // a 15 digit decimal precision.
-    quantizerReference =
-        bid128_scalbn(quantizerReference, base10Exp, roundMode, &idec_signaling_flags);
+    quantizerReference = bid128_scalbn(quantizerReference, base10Exp, roundMode, signalingFlags);
 
-    value = bid128_quantize(value, quantizerReference, roundMode, &idec_signaling_flags);
+    value = bid128_quantize(value, quantizerReference, roundMode, signalingFlags);
     return value;
 }
 
-Decimal128::Decimal128Value::Decimal128Value() : high64(0), low64(0) {}
-
-Decimal128::Decimal128Value::Decimal128Value(const Decimal128Value& dval)
-    : high64(dval.high64), low64(dval.low64) {}
-
-Decimal128::Decimal128Value::Decimal128Value(uint64_t high, uint64_t low)
+Decimal128::Decimal128Value::Decimal128Value(uint64_t low, uint64_t high)
     : high64(high), low64(low) {}
-
-Decimal128::Decimal128() : _value() {}
-
-Decimal128::Decimal128(Decimal128::Decimal128Value dec128Value) : _value(dec128Value) {}
 
 Decimal128::Decimal128(int32_t int32Value)
     : _value(libraryTypeToDecimal128Value(bid128_from_int32(int32Value))) {}
@@ -123,11 +103,11 @@ Decimal128::Decimal128(long long int64Value)
 
 Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     BID_UINT128 convertedDoubleValue;
-    uint32_t idec_signaling_flags = 0;
-    convertedDoubleValue = binary64_to_bid128(doubleValue, roundMode, &idec_signaling_flags);
+    uint32_t throwAwayFlag = 0;
+    convertedDoubleValue = binary64_to_bid128(doubleValue, roundMode, &throwAwayFlag);
 
-    // If the original number was zero, there's no need to quantize
-    if (doubleValue == 0.0) {
+    // If the original number was zero, infinity, or NaN, there's no need to quantize
+    if (doubleValue == 0.0 || std::isinf(doubleValue) || std::isnan(doubleValue)) {
         _value = libraryTypeToDecimal128Value(convertedDoubleValue);
         return;
     }
@@ -208,8 +188,8 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     if (base10Exp > 0)
         base10Exp += 2;
 
-    _value = libraryTypeToDecimal128Value(quantizeTo15DecimalDigits(
-        convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags));
+    _value = libraryTypeToDecimal128Value(
+        quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
 
     // Check if the quantization was done correctly: _value stores exactly 15
     // decimal digits of precision (15 digits can fit into the low 64 bits of the decimal)
@@ -220,70 +200,133 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
             base10Exp--;
         else
             base10Exp++;
-        _value = libraryTypeToDecimal128Value(quantizeTo15DecimalDigits(
-            convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags));
+
+        _value = libraryTypeToDecimal128Value(
+            quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
     }
     invariant(_value.low64 >= 100000000000000ull && _value.low64 <= 999999999999999ull);
 }
 
 Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
+    uint32_t throwAwayFlag = 0;
     std::unique_ptr<char[]> charInput(new char[stringValue.size() + 1]);
     std::copy(stringValue.begin(), stringValue.end(), charInput.get());
     charInput[stringValue.size()] = '\0';
     BID_UINT128 dec128;
-    uint32_t idec_signaling_flags = 0;
-    dec128 = bid128_from_string(charInput.get(), roundMode, &idec_signaling_flags);
+    dec128 = bid128_from_string(charInput.get(), roundMode, &throwAwayFlag);
     _value = libraryTypeToDecimal128Value(dec128);
 }
 
-Decimal128::~Decimal128() {}
-
-const Decimal128::Decimal128Value Decimal128::getValue() const {
+Decimal128::Decimal128Value Decimal128::getValue() const {
     return _value;
 }
 
-int32_t Decimal128::toInt(RoundingMode roundMode) {
+Decimal128 Decimal128::toAbs() const {
     BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    uint32_t idec_signaling_flags = 0;
-    switch (roundMode) {
-        case kRoundTiesToEven:
-            return bid128_to_int32_rnint(dec128, &idec_signaling_flags);
-        case kRoundTowardNegative:
-            return bid128_to_int32_floor(dec128, &idec_signaling_flags);
-        case kRoundTowardPositive:
-            return bid128_to_int32_ceil(dec128, &idec_signaling_flags);
-        case kRoundTowardZero:
-            return bid128_to_int32_int(dec128, &idec_signaling_flags);
-        case kRoundTiesToAway:
-            return bid128_to_int32_rninta(dec128, &idec_signaling_flags);
-    }
-    // Mimic behavior of Intel library (if round mode not valid, assume default)
-    return bid128_to_int32_rnint(dec128, &idec_signaling_flags);
+    dec128 = bid128_abs(dec128);
+    return Decimal128(libraryTypeToDecimal128Value(dec128));
 }
 
-int64_t Decimal128::toLong(RoundingMode roundMode) {
-    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    uint32_t idec_signaling_flags = 0;
-    switch (roundMode) {
-        case kRoundTiesToEven:
-            return bid128_to_int64_rnint(dec128, &idec_signaling_flags);
-        case kRoundTowardNegative:
-            return bid128_to_int64_floor(dec128, &idec_signaling_flags);
-        case kRoundTowardPositive:
-            return bid128_to_int64_ceil(dec128, &idec_signaling_flags);
-        case kRoundTowardZero:
-            return bid128_to_int64_int(dec128, &idec_signaling_flags);
-        case kRoundTiesToAway:
-            return bid128_to_int64_rninta(dec128, &idec_signaling_flags);
-    }
-    // Mimic behavior of Intel library (if round mode not valid, assume default)
-    return bid128_to_int64_rnint(dec128, &idec_signaling_flags);
+int32_t Decimal128::toInt(RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return toInt(&throwAwayFlag, roundMode);
 }
 
-double Decimal128::toDouble(RoundingMode roundMode) {
-    // The Intel library float to float conversion always returns flags (not always for
-    // integer types). Just discard them here.
-    return isAndToDouble(roundMode).first;
+int32_t Decimal128::toInt(uint32_t* signalingFlags, RoundingMode roundMode) const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    switch (roundMode) {
+        case kRoundTiesToEven:
+            return bid128_to_int32_rnint(dec128, signalingFlags);
+        case kRoundTowardNegative:
+            return bid128_to_int32_floor(dec128, signalingFlags);
+        case kRoundTowardPositive:
+            return bid128_to_int32_ceil(dec128, signalingFlags);
+        case kRoundTowardZero:
+            return bid128_to_int32_int(dec128, signalingFlags);
+        case kRoundTiesToAway:
+            return bid128_to_int32_rninta(dec128, signalingFlags);
+        default:
+            return bid128_to_int32_rnint(dec128, signalingFlags);
+    }
+}
+
+int64_t Decimal128::toLong(RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return toLong(&throwAwayFlag, roundMode);
+}
+
+int64_t Decimal128::toLong(uint32_t* signalingFlags, RoundingMode roundMode) const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    switch (roundMode) {
+        case kRoundTiesToEven:
+            return bid128_to_int64_rnint(dec128, signalingFlags);
+        case kRoundTowardNegative:
+            return bid128_to_int64_floor(dec128, signalingFlags);
+        case kRoundTowardPositive:
+            return bid128_to_int64_ceil(dec128, signalingFlags);
+        case kRoundTowardZero:
+            return bid128_to_int64_int(dec128, signalingFlags);
+        case kRoundTiesToAway:
+            return bid128_to_int64_rninta(dec128, signalingFlags);
+        default:
+            return bid128_to_int64_rnint(dec128, signalingFlags);
+    }
+}
+
+int32_t Decimal128::toIntExact(RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return toIntExact(&throwAwayFlag, roundMode);
+}
+
+int32_t Decimal128::toIntExact(uint32_t* signalingFlags, RoundingMode roundMode) const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    switch (roundMode) {
+        case kRoundTiesToEven:
+            return bid128_to_int32_xrnint(dec128, signalingFlags);
+        case kRoundTowardNegative:
+            return bid128_to_int32_xfloor(dec128, signalingFlags);
+        case kRoundTowardPositive:
+            return bid128_to_int32_xceil(dec128, signalingFlags);
+        case kRoundTowardZero:
+            return bid128_to_int32_xint(dec128, signalingFlags);
+        case kRoundTiesToAway:
+            return bid128_to_int32_xrninta(dec128, signalingFlags);
+        default:
+            return bid128_to_int32_xrnint(dec128, signalingFlags);
+    }
+}
+
+int64_t Decimal128::toLongExact(RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return toLongExact(&throwAwayFlag, roundMode);
+}
+
+int64_t Decimal128::toLongExact(uint32_t* signalingFlags, RoundingMode roundMode) const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    switch (roundMode) {
+        case kRoundTiesToEven:
+            return bid128_to_int64_xrnint(dec128, signalingFlags);
+        case kRoundTowardNegative:
+            return bid128_to_int64_xfloor(dec128, signalingFlags);
+        case kRoundTowardPositive:
+            return bid128_to_int64_xceil(dec128, signalingFlags);
+        case kRoundTowardZero:
+            return bid128_to_int64_xint(dec128, signalingFlags);
+        case kRoundTiesToAway:
+            return bid128_to_int64_xrninta(dec128, signalingFlags);
+        default:
+            return bid128_to_int64_xrnint(dec128, signalingFlags);
+    }
+}
+
+double Decimal128::toDouble(RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return toDouble(&throwAwayFlag, roundMode);
+}
+
+double Decimal128::toDouble(uint32_t* signalingFlags, RoundingMode roundMode) const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    return bid128_to_binary64(dec128, roundMode, signalingFlags);
 }
 
 std::string Decimal128::toString() const {
@@ -387,170 +430,199 @@ std::string Decimal128::toString() const {
     return result;
 }
 
-std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingMode roundMode) {
-    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    uint32_t idec_signaling_flags = 0;
-    int32_t val;
-    switch (roundMode) {
-        case kRoundTiesToEven:
-            val = bid128_to_int32_xrnint(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardNegative:
-            val = bid128_to_int32_xfloor(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardPositive:
-            val = bid128_to_int32_xceil(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardZero:
-            val = bid128_to_int32_xint(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTiesToAway:
-            val = bid128_to_int32_xrninta(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-    }
-    val = bid128_to_int32_xrnint(dec128, &idec_signaling_flags);
-    return std::make_pair(val, idec_signaling_flags == 0);
-}
-
-std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingMode roundMode) {
-    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    uint32_t idec_signaling_flags = 0;
-    int64_t val;
-    switch (roundMode) {
-        case kRoundTiesToEven:
-            val = bid128_to_int64_xrnint(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardNegative:
-            val = bid128_to_int64_xfloor(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardPositive:
-            val = bid128_to_int64_xceil(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTowardZero:
-            val = bid128_to_int64_xint(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-        case kRoundTiesToAway:
-            val = bid128_to_int64_xrninta(dec128, &idec_signaling_flags);
-            return std::make_pair(val, idec_signaling_flags == 0);
-    }
-    // Mimic behavior of Intel library (if round mode not valid, assume default)
-    val = bid128_to_int64_xrnint(dec128, &idec_signaling_flags);
-    return std::make_pair(val, idec_signaling_flags == 0);
-}
-
-std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
-    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    uint32_t idec_signaling_flags = 0;
-    double val = bid128_to_binary64(dec128, roundMode, &idec_signaling_flags);
-    return std::make_pair(val, idec_signaling_flags == 0);
-}
-
-bool Decimal128::isZero() {
+bool Decimal128::isZero() const {
     return bid128_isZero(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isNaN() {
+bool Decimal128::isNaN() const {
     return bid128_isNaN(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isInfinite() {
+bool Decimal128::isInfinite() const {
     return bid128_isInf(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isNegative() {
+bool Decimal128::isNegative() const {
     return bid128_isSigned(decimal128ToLibraryType(_value));
 }
 
-Decimal128 Decimal128::add(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::add(const Decimal128& other, RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return add(other, &throwAwayFlag, roundMode);
+}
+
+Decimal128 Decimal128::add(const Decimal128& other,
+                           uint32_t* signalingFlags,
+                           RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 addend = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    current = bid128_add(current, addend, roundMode, &idec_signaling_flags);
+    current = bid128_add(current, addend, roundMode, signalingFlags);
     Decimal128::Decimal128Value value = libraryTypeToDecimal128Value(current);
     Decimal128 result(value);
     return result;
 }
 
-Decimal128 Decimal128::subtract(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::subtract(const Decimal128& other, RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return subtract(other, &throwAwayFlag, roundMode);
+}
+
+Decimal128 Decimal128::subtract(const Decimal128& other,
+                                uint32_t* signalingFlags,
+                                RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 sub = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    current = bid128_sub(current, sub, roundMode, &idec_signaling_flags);
+    current = bid128_sub(current, sub, roundMode, signalingFlags);
     Decimal128::Decimal128Value value = libraryTypeToDecimal128Value(current);
     Decimal128 result(value);
     return result;
 }
 
-Decimal128 Decimal128::multiply(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::multiply(const Decimal128& other, RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return multiply(other, &throwAwayFlag, roundMode);
+}
+
+Decimal128 Decimal128::multiply(const Decimal128& other,
+                                uint32_t* signalingFlags,
+                                RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 factor = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    current = bid128_mul(current, factor, roundMode, &idec_signaling_flags);
+    current = bid128_mul(current, factor, roundMode, signalingFlags);
     Decimal128::Decimal128Value value = libraryTypeToDecimal128Value(current);
     Decimal128 result(value);
     return result;
 }
 
-Decimal128 Decimal128::divide(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::divide(const Decimal128& other, RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return divide(other, &throwAwayFlag, roundMode);
+}
+
+Decimal128 Decimal128::divide(const Decimal128& other,
+                              uint32_t* signalingFlags,
+                              RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 divisor = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    current = bid128_div(current, divisor, roundMode, &idec_signaling_flags);
+    current = bid128_div(current, divisor, roundMode, signalingFlags);
     Decimal128::Decimal128Value value = libraryTypeToDecimal128Value(current);
     Decimal128 result(value);
     return result;
 }
 
-Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundMode) {
+Decimal128 Decimal128::quantize(const Decimal128& other, RoundingMode roundMode) const {
+    uint32_t throwAwayFlag = 0;
+    return quantize(other, &throwAwayFlag, roundMode);
+}
+
+Decimal128 Decimal128::quantize(const Decimal128& reference,
+                                uint32_t* signalingFlags,
+                                RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 q = decimal128ToLibraryType(reference.getValue());
-    uint32_t idec_signaling_flags = 0;
-    BID_UINT128 quantizedResult = bid128_quantize(current, q, roundMode, &idec_signaling_flags);
+    BID_UINT128 quantizedResult = bid128_quantize(current, q, roundMode, signalingFlags);
     Decimal128::Decimal128Value value = libraryTypeToDecimal128Value(quantizedResult);
     Decimal128 result(value);
     return result;
 }
 
-bool Decimal128::isEqual(const Decimal128& other) {
-    BID_UINT128 current = decimal128ToLibraryType(_value);
-    BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_equal(current, compare, &idec_signaling_flags);
+Decimal128 Decimal128::normalize() const {
+    // Normalize by adding 0E-6176 which forces a decimal to maximum precision (34 digits)
+    return add(kLargestNegativeExponentZero);
 }
 
-bool Decimal128::isNotEqual(const Decimal128& other) {
+bool Decimal128::isEqual(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_not_equal(current, compare, &idec_signaling_flags);
+    return bid128_quiet_equal(current, compare, &throwAwayFlag);
 }
 
-bool Decimal128::isGreater(const Decimal128& other) {
+bool Decimal128::isNotEqual(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_greater(current, compare, &idec_signaling_flags);
+    return bid128_quiet_not_equal(current, compare, &throwAwayFlag);
 }
 
-bool Decimal128::isGreaterEqual(const Decimal128& other) {
+bool Decimal128::isGreater(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_greater_equal(current, compare, &idec_signaling_flags);
+    return bid128_quiet_greater(current, compare, &throwAwayFlag);
 }
 
-bool Decimal128::isLess(const Decimal128& other) {
+bool Decimal128::isGreaterEqual(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_less(current, compare, &idec_signaling_flags);
+    return bid128_quiet_greater_equal(current, compare, &throwAwayFlag);
 }
 
-bool Decimal128::isLessEqual(const Decimal128& other) {
+bool Decimal128::isLess(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
-    uint32_t idec_signaling_flags = 0;
-    return bid128_quiet_less_equal(current, compare, &idec_signaling_flags);
+    return bid128_quiet_less(current, compare, &throwAwayFlag);
 }
+
+bool Decimal128::isLessEqual(const Decimal128& other) const {
+    uint32_t throwAwayFlag = 0;
+    BID_UINT128 current = decimal128ToLibraryType(_value);
+    BID_UINT128 compare = decimal128ToLibraryType(other.getValue());
+    return bid128_quiet_less_equal(current, compare, &throwAwayFlag);
+}
+
+/**
+ * The following static const variables are used to mathematically produce
+ * frequently needed Decimal128 constants.
+ */
+
+namespace {
+// Get the representation of 1 with 17 zeros (half of decimal128's 34 digit precision)
+const uint64_t t17 = 100ull * 1000 * 1000 * 1000 * 1000 * 1000;
+// Get the low 64 bits of 34 consecutive decimal 9's
+// t17 * 17 gives 1 with 34 0's, so subtract 1 to get all 9's
+const uint64_t t34lo64 = t17 * t17 - 1;
+// Mod t17 by 2^32 to get the low 32 bits of t17's binary representation
+const uint64_t t17lo32 = t17 % (1ull << 32);
+// Divide t17 by 2^32 to get the high 32 bits of t17's binary representation
+const uint64_t t17hi32 = t17 >> 32;
+// Multiply t17 by t17 and keep the high 64 bits by distributing the operation to
+// t17hi32*t17hi32 + 2*t17hi32*t17lo32 + t17lo32*t17lo32 where the 2nd term
+// is shifted right by 32 and the 3rd term by 64 (which effectively drops the 3rd term)
+const uint64_t t34hi64 = t17hi32 * t17hi32 + (((t17hi32 * t17lo32) >> 31));
+
+// Get the max exponent for a decimal128 (including the bias)
+const uint64_t maxBiasedExp = 6143 + 6144;
+// Get the binary representation of the negative sign bit
+const uint64_t negativeSignBit = 1ull << 63;
+}  // namespace
+
+// The low bits of the largest positive number are all 9s (t34lo64) and
+// the highest are t32hi64 added to the max exponent shifted over 49.
+// The exponent is placed at 49 because 64 bits - 1 sign bit - 14 exponent bits = 49
+const Decimal128 Decimal128::kLargestPositive(
+    Decimal128::Decimal128Value(t34lo64, (maxBiasedExp << 49) + t34hi64));
+// The smallest positive decimal is 1 with the largest negative exponent of 0 (biased -6176)
+const Decimal128 Decimal128::kSmallestPositive(Decimal128::Decimal128Value(1ull, 0ull));
+
+// Add a sign bit to the largest and smallest positive to get their corresponding negatives
+const Decimal128 Decimal128::kLargestNegative(
+    Decimal128::Decimal128Value(t34lo64, (maxBiasedExp << 49) + t34hi64 + negativeSignBit));
+const Decimal128 Decimal128::kSmallestNegative(Decimal128::Decimal128Value(1ull,
+                                                                           0ull + negativeSignBit));
+// Get the reprsentation of 0 with the largest negative exponent
+const Decimal128 Decimal128::kLargestNegativeExponentZero(Decimal128::Decimal128Value(0ull, 0ull));
+
+// Shift the format of the combination bits to the right position to get Inf and NaN
+// +Inf = 0111 1000 ... ... = 0x78 ... ...
+// +NaN = 0111 1100 ... ... = 0x7c ... ...
+const Decimal128 Decimal128::kPositiveInfinity(Decimal128::Decimal128Value(0ull, 0x78ull << 56));
+const Decimal128 Decimal128::kNegativeInfinity(
+    Decimal128::Decimal128Value(0ull, (0x78ull << 56) + negativeSignBit));
+const Decimal128 Decimal128::kPositiveNaN(Decimal128::Decimal128Value(0ull, 0x7cull << 56));
+const Decimal128 Decimal128::kNegativeNaN(
+    Decimal128::Decimal128Value(0ull, (0x7cull << 56) + negativeSignBit));
 
 }  // namespace mongo

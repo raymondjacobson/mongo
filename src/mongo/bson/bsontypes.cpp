@@ -82,11 +82,15 @@ const char* typeName(BSONType type) {
             return "Timestamp";
         case NumberLong:
             return "NumberLong64";
-        // JSTypeMax doesn't make sense to turn into a string; overlaps with highest-valued type
+        case NumberDecimal:
+            return "NumberDecimal128";
+        // JSTypeMax doesn't make sense to turn into a string; overlaps with highest-valued
+        // type
         case MaxKey:
             return "MaxKey";
         default:
             return "Invalid";
     }
 }
+
 }  // namespace mongo
