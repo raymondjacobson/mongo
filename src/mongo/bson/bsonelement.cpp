@@ -870,16 +870,13 @@ namespace mongo {
                 return a == b ? 0 : 1;
             }
 
-            // DECIMAL_DATA_TYPE probably add a case here
-
-        case NumberInt: {
-            // All types can precisely represent all NumberInts, so it is safe to simply convert to
-            // whatever rhs's type is.
+        case NumberDecimal: {
             switch (r.type()) {
-            case NumberInt: return compareInts(l._numberInt(), r._numberInt());
-            case NumberLong: return compareLongs(l._numberInt(), r._numberLong());
-            case NumberDouble: return compareDoubles(l._numberInt(), r._numberDouble());
-            default: invariant(false);
+                case NumberDecimal: return compareDecimals(l._numberDecimal(), r._numberDecimal());
+                case NumberInt: return compareDecimals(l._numberDecimal(), r._numberInt());
+                case NumberLong: return compareDecimals(l._numberDecimal(), r._numberLong());
+                case NumberDouble: return compareDecimals(l._numberDecimal(), r._numberDouble());
+                default: invariant(false);
             }
         }
 
@@ -888,6 +885,7 @@ namespace mongo {
             case NumberLong: return compareLongs(l._numberLong(), r._numberLong());
             case NumberInt: return compareLongs(l._numberLong(), r._numberInt());
             case NumberDouble: return compareLongToDouble(l._numberLong(), r._numberDouble());
+            case NumberDecimal: return compareDecimals(l._numberLong(), r._numberDecimal());
             default: invariant(false);
             }
         }
@@ -897,6 +895,19 @@ namespace mongo {
             case NumberDouble: return compareDoubles(l._numberDouble(), r._numberDouble());
             case NumberInt: return compareDoubles(l._numberDouble(), r._numberInt());
             case NumberLong: return compareDoubleToLong(l._numberDouble(), r._numberLong());
+            case NumberDecimal: return compareDecimals(l._numberDouble(), r._numberDecimal());
+            default: invariant(false);
+            }
+        }
+
+        case NumberInt: {
+            // All types can precisely represent all NumberInts, so it is safe to simply convert to
+            // whatever rhs's type is.
+            switch (r.type()) {
+            case NumberInt: return compareInts(l._numberInt(), r._numberInt());
+            case NumberLong: return compareLongs(l._numberInt(), r._numberLong());
+            case NumberDouble: return compareDoubles(l._numberInt(), r._numberDouble());
+            case NumberDecimal: return compareDecimals(l._numberInt(), r._numberDecimal());
             default: invariant(false);
             }
         }
