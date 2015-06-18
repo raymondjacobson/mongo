@@ -203,8 +203,8 @@ namespace mongo {
             appendNumImpl(j);
         }
         void appendNum(Decimal128 j) {
-            appendNumImpl(j.getValue().low64);
-            appendNumImpl(j.getValue().high64);
+            BOOST_STATIC_ASSERT(sizeof(Decimal128) == 16);
+            appendNumImpl(j);
         }
 
         void appendBuf(const void *src, size_t len) {
@@ -270,7 +270,6 @@ namespace mongo {
             // we bake that assumption in here. This decision should be revisited soon.
             DataView(grow(sizeof(t))).write(tagLittleEndian(t));
         }
-
 
         /* "slow" portion of 'grow()'  */
         void NOINLINE_DECL grow_reallocate(int minSize) {

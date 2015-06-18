@@ -105,7 +105,7 @@ namespace mongo {
         */
         void Val(Date_t& v)         const { v = Date(); }
         void Val(long long& v)      const { v = Long(); }
-        // DECIMAL_DATA_TYPE
+        void Val(Decimal128& v)     const { v = Decimal128(); }
         void Val(bool& v)           const { v = Bool(); }
         void Val(BSONObj& v)        const;
         void Val(mongo::OID& v)     const { v = OID(); }

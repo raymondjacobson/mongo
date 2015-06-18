@@ -1028,8 +1028,6 @@ namespace mongo {
         case mongo::NumberDouble:
         case mongo::NumberLong:
         case mongo::NumberInt: {
-            // DECIMAL_DATA_TYPE
-            //
             // This converts all numbers to doubles, which ignores the low-order bits of
             // NumberLongs > 2**53, but that is ok since the hash will still be the same for
             // equal numbers and is still likely to be different for different numbers.

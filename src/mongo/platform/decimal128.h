@@ -175,6 +175,26 @@ public:
     bool isLess(const Decimal128& rhs);
     bool isLessEqual(const Decimal128& rhs);
 
+    /**
+     * These functions get the minimum and maximum valid Decimal128s
+     * getPosMin() -> 1E-6176
+     * getPosMax() -> 9999999999999999999999999999999999E6111
+     * getNegMin() -> -9999999999999999999999999999999999E6111
+     * getNegMax() -> -1E-6176
+     */
+    static Decimal128 getPosMin();
+    static Decimal128 getPosMax();
+    static Decimal128 getNegMin();
+    static Decimal128 getNegMax();
+    /**
+     * These functions get special values (+/- Inf, +/- NaN) represented in Decimal128, which
+     * is very useful for testing and other numerical comparisons
+     */
+     static Decimal128 getPosInfinity();
+     static Decimal128 getNegInfinity();
+     static Decimal128 getPosNaN();
+     static Decimal128 getNegNaN();
+
 private:
     Decimal128Value _value;
 };

@@ -48,6 +48,10 @@ namespace mongo {
         case NumberDouble:
         case NumberLong:
             append( fieldName , - std::numeric_limits<double>::max() ); return;
+        case NumberDecimal:
+            // TODO: This may want to be included with the other numeric types
+            // depending on how it's used (in indexes and keystrings)
+            append( fieldName , Decimal128::getNegMin() ); return;
         case Symbol:
         case String:
             append( fieldName , "" ); return;
@@ -105,6 +109,10 @@ namespace mongo {
         case NumberDouble:
         case NumberLong:
             append( fieldName , std::numeric_limits<double>::max() ); return;
+        case NumberDecimal:
+            // TODO: This may want to be included with the other numeric types
+            // depending on how it's used (in indexes and keystrings)
+            append( fieldName , Decimal128::getPosMax() ); return;
         case Symbol:
         case String:
             appendMinForType( fieldName, Object ); return;

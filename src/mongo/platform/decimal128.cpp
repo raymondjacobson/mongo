@@ -87,6 +87,11 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     BID_UINT128 dec128;
     uint32_t idec_signaling_flags = 0;
     dec128 = binary64_to_bid128(doubleValue, roundMode, &idec_signaling_flags);
+    // Don't quantize if infinity or NaN, just set the _value and return
+    if (bid128_isInf(dec128) || bid128_isNaN(dec128)) {
+        _value = Decimal128Value(dec128.w);
+        return;
+    }
     BID_UINT128 quantizerReference;
     // The quantizer starts at 1E-15 because a binary float's decimal
     // precision is necessarily >= 15
@@ -145,6 +150,7 @@ Decimal128::~Decimal128() {
 const Decimal128::Decimal128Value& Decimal128::getValue() const {
     return _value;
 }
+
 Decimal128::Decimal128Value& Decimal128::getValue() {
     return const_cast<Decimal128::Decimal128Value&>(
         static_cast<const Decimal128::Decimal128&>(*this).getValue());
@@ -363,6 +369,70 @@ bool Decimal128::isLessEqual(const Decimal128& rhs) {
     BID_UINT128 compare = Decimal128ToLibraryType(rhs.getValue());
     uint32_t idec_signaling_flags = 0;
     return bid128_quiet_less_equal(current, compare, &idec_signaling_flags);
+}
+
+Decimal128 Decimal128::getPosMin() {
+    uint64_t val[2];
+    val[HIGH_64] = 0ull;
+    val[LOW_64] = 1ull;
+    Decimal128 min( (Decimal128Value::Decimal128Value(val)) );
+    return min;
+}
+
+Decimal128 Decimal128::getPosMax() {
+    uint64_t val[2];
+    val[HIGH_64] = 6917508178773903296ull;
+    val[LOW_64] = 4003012203950112767ull;
+    Decimal128 max( (Decimal128Value::Decimal128Value(val)) );
+    return max;
+}
+
+Decimal128 Decimal128::getNegMin() {
+    uint64_t val[2];
+    val[HIGH_64] = 16140880215628679104ull;
+    val[LOW_64] = 4003012203950112767ull;
+    Decimal128 min( (Decimal128Value::Decimal128Value(val)) );
+    return min;
+}
+
+Decimal128 Decimal128::getNegMax() {
+    uint64_t val[2];
+    val[HIGH_64] = 9223372036854775808ull;
+    val[LOW_64] = 1ull;
+    Decimal128 max( (Decimal128Value::Decimal128Value(val)) );
+    return max;
+}
+
+Decimal128 Decimal128::getPosInfinity() {
+    uint64_t val[2];
+    val[HIGH_64] = 8646911284551352320ull;
+    val[LOW_64] = 0ull;
+    Decimal128 posInf( (Decimal128Value::Decimal128Value(val)) );
+    return posInf;
+}
+
+Decimal128 Decimal128::getNegInfinity() {
+    uint64_t val[2];
+    val[HIGH_64] = 17870283321406128128ull;
+    val[LOW_64] = 0ull;
+    Decimal128 negInf( (Decimal128Value::Decimal128Value(val)) );
+    return negInf;
+}
+
+Decimal128 Decimal128::getPosNaN() {
+    uint64_t val[2];
+    val[HIGH_64] = 8935141660703064064ull;
+    val[LOW_64] = 0ull;
+    Decimal128 posNaN( (Decimal128Value::Decimal128Value(val)) );
+    return posNaN;
+}
+
+Decimal128 Decimal128::getNegNaN() {
+    uint64_t val[2];
+    val[HIGH_64] = 18158513697557839872ull;
+    val[LOW_64] = 0ull;
+    Decimal128 negNaN( (Decimal128Value::Decimal128Value(val)) );
+    return negNaN;
 }
 
 }  // namespace mongo
