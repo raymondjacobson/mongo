@@ -100,9 +100,9 @@ namespace mongo {
                 s << "{ \"$numberDecimal\" : \"";
             // Recognize again that this is not valid JSON according to RFC-4627.
             // Also, treat -NaN and +NaN as the same thing for MongoDB.
-            if (numberDecimal().isNan()) {
+            if (numberDecimal().isNaN()) {
                 s << "NaN";
-            } else if (numberDecimal().isInfinity()) {
+            } else if (numberDecimal().isInfinite()) {
                 s << (numberDecimal().isNegative() ? "-Infinity" : "Infinity");
             } else {
                 s << numberDecimal().toString();

@@ -46,6 +46,7 @@
 #include "mongo/bson/bsonelement.h"
 #include "mongo/bson/bsonmisc.h"
 #include "mongo/bson/bsonobj.h"
+#include "mongo/platform/decimal128.h"
 
 namespace mongo {
 
@@ -240,6 +241,14 @@ namespace mongo {
             return *this;
         }
 
+        /** Append a NumberDecimal */
+        BSONObjBuilder& append(StringData fieldName, Decimal128 n) {
+            _b.appendNum((char) NumberDecimal);
+            _b.appendStr(fieldName);
+            _b.appendNum(n);
+            return *this;
+        }
+
         /** appends a number.  if n < max(int)/2 then uses int, otherwise long long */
         BSONObjBuilder& appendIntOrLL( StringData fieldName , long long n ) {
             // extra () to avoid max macro on windows
@@ -292,6 +301,11 @@ namespace mongo {
                 append( fieldName, llNumber );
             }
 
+            return *this;
+        }
+
+        BSONObjBuilder& appendNumber( StringData fieldName, Decimal128 decNumber ) {
+            append( fieldName, decNumber );
             return *this;
         }
 

@@ -115,7 +115,7 @@ namespace mongo {
              *   | NUMBER
              *   | NUMBERINT
              *   | NUMBERLONG
-             // DECIMAL_DATA_TYPE
+             *   | NUMBERDECIMAL
              *   | OBJECT
              *   | ARRAY
              *
@@ -161,6 +161,7 @@ namespace mongo {
              *   | REFOBJECT
              *   | UNDEFINEDOBJECT
              *   | NUMBERLONGOBJECT
+             *   | NUMBERDECIMALOBJECT
              *   | MINKEYOBJECT
              *   | MAXKEYOBJECT
              *
@@ -234,6 +235,12 @@ namespace mongo {
             Status numberLongObject(StringData fieldName, BSONObjBuilder&);
 
             /*
+             * NUMBERDECIMALOBJECT :
+             *     { FIELD("$numberDecimal") : "<number>" }
+             */
+            Status numberDecimalObject(StringData fieldName, BSONObjBuilder&);
+
+            /*
              * MINKEYOBJECT :
              *     { FIELD("$minKey") : 1 }
              */
@@ -289,6 +296,12 @@ namespace mongo {
              *     NumberLong( <number> )
              */
             Status numberLong(StringData fieldName, BSONObjBuilder&);
+
+            /*
+             * NUMBERDECIMAL :
+             *     NumberDecimal( <number> )
+             */
+            Status numberDecimal(StringData fieldName, BSONObjBuilder&);
 
             /*
              * NUMBERINT :
