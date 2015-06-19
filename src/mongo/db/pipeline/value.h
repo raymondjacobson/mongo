@@ -72,6 +72,7 @@ namespace mongo {
         explicit Value(int value)                 : _storage(NumberInt, value) {}
         explicit Value(long long value)           : _storage(NumberLong, value) {}
         explicit Value(double value)              : _storage(NumberDouble, value) {}
+        explicit Value(const Decimal128& value)   : _storage(NumberDecimal, value) {}
         explicit Value(const Timestamp& value)    : _storage(bsonTimestamp, value) {}
         explicit Value(const OID& value)          : _storage(jstOID, value) {}
         explicit Value(StringData value)          : _storage(String, value) {}
@@ -122,7 +123,8 @@ namespace mongo {
         bool numeric() const {
             return _storage.type == NumberDouble
                 || _storage.type == NumberLong
-                || _storage.type == NumberInt;
+                || _storage.type == NumberInt
+                || _storage.type == NumberDecimal;
         }
 
         /// Get the BSON type of the field.
@@ -132,6 +134,7 @@ namespace mongo {
          *  Asserts if the requested value type is not exactly correct.
          *  See coerceTo methods below for a more type-flexible alternative.
          */
+        Decimal128 getDecimal() const;
         double getDouble() const;
         std::string getString() const;
         Document getDocument() const;
@@ -176,6 +179,7 @@ namespace mongo {
         int coerceToInt() const;
         long long coerceToLong() const;
         double coerceToDouble() const;
+        Decimal128 coerceToDecimal() const;
         Timestamp coerceToTimestamp() const;
         long long coerceToDate() const;
         time_t coerceToTimeT() const;

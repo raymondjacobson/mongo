@@ -76,6 +76,7 @@ namespace mongo {
             verify(refCounter == !shortStr);
             break;
 
+        case NumberDecimal:
         case BinData: // TODO this should probably support short-string optimization
         case Array: // TODO this should probably support empty-is-NULL optimization
         case DBRef:
@@ -206,6 +207,10 @@ namespace mongo {
             _storage.longValue = elem.numberLong();
             break;
 
+        case NumberDecimal:
+            _storage.putDecimal(elem.numberDecimal());
+            break;
+
         case CodeWScope: {
             StringData code (elem.codeWScopeCode(), elem.codeWScopeCodeLen()-1);
             _storage.putCodeWScope(BSONCodeWScope(code, elem.codeWScopeObject()));
@@ -244,12 +249,26 @@ namespace mongo {
         return Value(intValue);
     }
 
+    Decimal128 Value::getDecimal() const {
+        BSONType type = getType();
+        if (type == NumberInt)
+            return Decimal128(_storage.intValue);
+        if (type == NumberLong)
+            return Decimal128(_storage.longValue);
+        if (type == NumberDouble)
+            return Decimal128(_storage.doubleValue);
+        verify(type == NumberDecimal);
+        return _storage.getDecimal();
+    }
+
     double Value::getDouble() const {
         BSONType type = getType();
         if (type == NumberInt)
             return _storage.intValue;
         if (type == NumberLong)
             return static_cast< double >( _storage.longValue );
+        if (type == NumberDecimal)
+            return _storage.getDecimal().toDouble();
 
         verify(type == NumberDouble);
         return _storage.doubleValue;
@@ -285,6 +304,7 @@ namespace mongo {
         case NumberInt:    return builder << val.getInt();
         case NumberLong:   return builder << val.getLong();
         case NumberDouble: return builder << val.getDouble();
+        case NumberDecimal:return builder << val.getDecimal();
         case String:       return builder << val.getStringData();
         case Bool:         return builder << val.getBool();
         case Date:         return builder << Date_t::fromMillisSinceEpoch(val.getDate());
@@ -358,6 +378,7 @@ namespace mongo {
         case NumberInt: return _storage.intValue;
         case NumberLong: return _storage.longValue;
         case NumberDouble: return _storage.doubleValue;
+        case NumberDecimal: return !_storage.getDecimal().isZero();
         }
         verify(false);
     }
@@ -372,6 +393,9 @@ namespace mongo {
 
         case NumberDouble:
             return static_cast<int>(_storage.doubleValue);
+
+        case NumberDecimal:
+            return (_storage.getDecimal()).toInt();
 
         default:
             uassert(16003, str::stream() <<
@@ -392,6 +416,9 @@ namespace mongo {
         case NumberDouble:
             return static_cast<long long>(_storage.doubleValue);
 
+        case NumberDecimal:
+            return (_storage.getDecimal()).toLong();
+
         default:
             uassert(16004, str::stream() <<
                     "can't convert from BSON type " << typeName(getType()) <<
@@ -410,6 +437,9 @@ namespace mongo {
 
         case NumberLong:
             return static_cast<double>(_storage.longValue);
+
+        case NumberDecimal:
+            return (_storage.getDecimal()).toDouble();
 
         default:
             uassert(16005, str::stream() <<
@@ -430,6 +460,28 @@ namespace mongo {
         default:
             uassert(16006, str::stream() <<
                     "can't convert from BSON type " << typeName(getType()) << " to Date",
+                    false);
+        } // switch(getType())
+    }
+
+    Decimal128 Value::coerceToDecimal() const {
+        switch(getType()) {
+        case NumberDecimal:
+            return _storage.getDecimal();
+
+        case NumberInt:
+            return Decimal128(_storage.intValue);
+
+        case NumberLong:
+            return Decimal128(_storage.longValue);
+
+        case NumberDouble:
+            return Decimal128(_storage.doubleValue);
+
+        default:
+            uassert(16008, str::stream() <<
+                    "can't convert from BSON type " << typeName(getType()) <<
+                    " to decimal",
                     false);
         } // switch(getType())
     }
@@ -495,6 +547,9 @@ namespace mongo {
 
         case NumberLong:
             return str::stream() << _storage.longValue;
+
+        case NumberDecimal:
+            return str::stream() << _storage.getDecimal().toString();
 
         case Code:
         case Symbol:
@@ -583,6 +638,21 @@ namespace mongo {
         case Date: // signed
             return cmp(rL._storage.dateValue, rR._storage.dateValue);
 
+        case NumberDecimal: {
+            switch (rType) {
+                case NumberDecimal:
+                    return compareDecimals(rL._storage.getDecimal(), rR._storage.getDecimal());
+                case NumberInt:
+                    return compareDecimals(rL._storage.getDecimal(), rR._storage.intValue);
+                case NumberLong:
+                    return compareDecimals(rL._storage.getDecimal(), rR._storage.longValue);
+                case NumberDouble:
+                    return compareDecimals(rL._storage.getDecimal(), rR._storage.doubleValue);
+                default:
+                    invariant(false);
+            }
+        }
+
         // Numbers should compare by equivalence even if different types
         case NumberInt: {
             // All types can precisely represent all NumberInts, so it is safe to simply convert to
@@ -591,6 +661,7 @@ namespace mongo {
             case NumberInt: return compareInts(rL._storage.intValue, rR._storage.intValue);
             case NumberLong: return compareLongs(rL._storage.intValue, rR._storage.longValue);
             case NumberDouble: return compareDoubles(rL._storage.intValue, rR._storage.doubleValue);
+            case NumberDecimal: return compareDecimals(rL._storage.intValue, rR._storage.getDecimal());
             default: invariant(false);
             }
         }
@@ -601,6 +672,7 @@ namespace mongo {
             case NumberInt: return compareLongs(rL._storage.longValue, rR._storage.intValue);
             case NumberDouble: return compareLongToDouble(rL._storage.longValue,
                                                           rR._storage.doubleValue);
+            case NumberDecimal: return compareDecimals(rL._storage.longValue, rR._storage.getDecimal());
             default: invariant(false);
             }
         }
@@ -613,6 +685,8 @@ namespace mongo {
                                                   rR._storage.intValue);
             case NumberLong: return compareDoubleToLong(rL._storage.doubleValue,
                                                         rR._storage.longValue);
+            case NumberDecimal: return compareDecimals(rL._storage.doubleValue,
+                                                       rR._storage.getDecimal());
             default: invariant(false);
             }
         }
@@ -714,6 +788,12 @@ namespace mongo {
         // NumberLongs > 2**53, but that is ok since the hash will still be the same for
         // equal numbers and is still likely to be different for different numbers.
         // SERVER-16851
+        // TODO: Addition of Decimal128 also converts to NumberDouble. This is
+        // functionally correct, but doesn't make use of the fact that some different
+        // dec128 values will have the same hash (the same doubles will represent them).
+        // Another idea would be to cast all types to decimal128 (solving the NumberLong issue
+        // as a side effect), but that would be slow.
+        case NumberDecimal:
         case NumberDouble:
         case NumberLong:
         case NumberInt: {
@@ -781,6 +861,9 @@ namespace mongo {
     BSONType Value::getWidestNumeric(BSONType lType, BSONType rType) {
         if (lType == NumberDouble) {
             switch(rType) {
+            case NumberDecimal:
+                return NumberDecimal;
+
             case NumberDouble:
             case NumberLong:
             case NumberInt:
@@ -792,6 +875,9 @@ namespace mongo {
         }
         else if (lType == NumberLong) {
             switch(rType) {
+            case NumberDecimal:
+                return NumberDecimal;
+
             case NumberDouble:
                 return NumberDouble;
 
@@ -805,6 +891,9 @@ namespace mongo {
         }
         else if (lType == NumberInt) {
             switch(rType) {
+            case NumberDecimal:
+                return NumberDecimal;
+
             case NumberDouble:
                 return NumberDouble;
 
@@ -813,6 +902,18 @@ namespace mongo {
 
             case NumberInt:
                 return NumberInt;
+
+            default:
+                break;
+            }
+        }
+        else if (lType == NumberDecimal) {
+            switch(rType) {
+            case NumberInt:
+            case NumberLong:
+            case NumberDouble:
+            case NumberDecimal:
+                return NumberDecimal;
 
             default:
                 break;
@@ -859,6 +960,7 @@ namespace mongo {
         case MinKey:
         case MaxKey:
         case NumberDouble:
+        case NumberDecimal:
         case jstOID:
         case Bool:
         case Date:
@@ -890,6 +992,7 @@ namespace mongo {
         case Symbol: return out << "Symbol(\"" << val.getSymbol() << "\")";
         case Code: return out << "Code(\"" << val.getCode() << "\")";
         case Bool: return out << (val.getBool() ? "true" : "false");
+        case NumberDecimal: return out << val.getDecimal().toString();
         case NumberDouble: return out << val.getDouble();
         case NumberLong: return out << val.getLong();
         case NumberInt: return out << val.getInt();
@@ -945,6 +1048,7 @@ namespace mongo {
         case NumberInt:    buf.appendNum(_storage.intValue); break;
         case NumberLong:   buf.appendNum(_storage.longValue); break;
         case NumberDouble: buf.appendNum(_storage.doubleValue); break;
+        case NumberDecimal:buf.appendNum(_storage.getDecimal()); break;
         case Bool:         buf.appendChar(_storage.boolValue); break;
         case Date:         buf.appendNum(_storage.dateValue); break;
         case bsonTimestamp:    buf.appendStruct(getTimestamp()); break;
@@ -1016,6 +1120,7 @@ namespace mongo {
         case NumberInt:    return Value(buf.read<int>());
         case NumberLong:   return Value(buf.read<long long>());
         case NumberDouble: return Value(buf.read<double>());
+        case NumberDecimal:return Value(buf.read<Decimal128>());
         case Bool:         return Value(bool(buf.read<char>()));
         case Date:         return Value(Date_t::fromMillisSinceEpoch(buf.read<long long>()));
         case bsonTimestamp:  return Value(buf.read<Timestamp>());

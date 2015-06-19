@@ -68,6 +68,12 @@ namespace mongo {
         const OID oid;
     };
 
+    class RCDecimal : public RefCountable {
+    public:
+        RCDecimal(const Decimal128& decVal) : decimalValue(decVal) {}
+        const Decimal128 decimalValue;
+    };
+
 #pragma pack(1)
     class ValueStorage {
     public:
@@ -81,6 +87,7 @@ namespace mongo {
         ValueStorage(BSONType t, int i)                    { zero(); type = t; intValue = i; }
         ValueStorage(BSONType t, long long l)              { zero(); type = t; longValue = l; }
         ValueStorage(BSONType t, double d)                 { zero(); type = t; doubleValue = d; }
+        ValueStorage(BSONType t, const Decimal128& d)      { zero(); type = t; putDecimal(d); }
         ValueStorage(BSONType t, Timestamp r)     { zero(); type = t; timestampValue = r.asULL(); }
         ValueStorage(BSONType t, bool b)                   { zero(); type = t; boolValue = b; }
         ValueStorage(BSONType t, const Document& d)        { zero(); type = t; putDocument(d); }
@@ -149,6 +156,10 @@ namespace mongo {
             putRefCountable(new RCCodeWScope(cws.code.toString(), cws.scope));
         }
 
+        void putDecimal(const Decimal128& d) {
+            putRefCountable(new RCDecimal(d));
+        }
+
         void putRefCountable(boost::intrusive_ptr<const RefCountable> ptr) {
             genericRCPtr = ptr.get();
 
@@ -184,6 +195,12 @@ namespace mongo {
         boost::intrusive_ptr<const RCDBRef> getDBRef() const {
             dassert(typeid(*genericRCPtr) == typeid(const RCDBRef));
             return static_cast<const RCDBRef*>(genericRCPtr);
+        }
+
+        Decimal128 getDecimal() const {
+            dassert(typeid(*genericRCPtr) == typeid(const RCDecimal));
+            const RCDecimal* decPtr = static_cast<const RCDecimal*>(genericRCPtr);
+            return decPtr->decimalValue;
         }
 
         // Document is incomplete here so this can't be inline
