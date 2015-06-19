@@ -475,6 +475,13 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
     ASSERT_EQUALS(result.second, false);
 }
 
+TEST_F(Decimal128Test, TestDecimal128IsZero) {
+    Decimal128 d1(0);
+    Decimal128 d2(500);
+    ASSERT_TRUE(d1.isZero());
+    ASSERT_FALSE(d2.isZero());
+}
+
 TEST_F(Decimal128Test, TestDecimal128IsNaN) {
     Decimal128 d1("NaN");
     Decimal128 d2("10.5");

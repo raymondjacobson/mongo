@@ -255,6 +255,10 @@ std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
         bid128_to_binary64(dec128, roundMode, &idec_signaling_flags), idec_signaling_flags == 0);
 }
 
+bool Decimal128::isZero() {
+    return bid128_isZero(Decimal128ToLibraryType(_value));
+}
+
 bool Decimal128::isNaN() {
     return bid128_isNaN(Decimal128ToLibraryType(_value));
 }

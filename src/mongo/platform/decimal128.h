@@ -136,8 +136,9 @@ public:
     std::pair<double, bool> isAndToDouble(RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-     * This set of functions check whether a Decimal128 is NaN or +/- Inf
+     * This set of functions check whether a Decimal128 is Zero, NaN, or +/- Inf
      */
+    bool isZero();
     bool isNaN();
     bool isInfinite();
     bool isNegative();
