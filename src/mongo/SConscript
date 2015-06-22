@@ -191,6 +191,8 @@ mongod = env.Program(
         "db/serveronly",
         "util/ntservice",
     ],
+    LIBPATH=['/Users/raymondjacobson/playground/IntelRDFPMathLib20U1/LIBRARY/'],
+    LIBS=['bid'],
 )
 
 env.Default(env.Install('#/', mongod))
