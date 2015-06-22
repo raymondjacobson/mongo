@@ -144,17 +144,17 @@ public:
     bool isNegative();
 
     /**
-     * This set of mathematical operation functions takes a single Decimal128
-     * and a rounding mode parameter and performs the operation to the calling Decimal128.
-     * The calls are commutative in that a.add(b) is equivalent to b.add(a).
-     * When operation results trigger a precision greater than 34 decimal digits,
-     * the supplied rounding mode is invoked (defeaulting to kRoundTiesToEven).
-     * NaN and +/- Inf are valid arguments and return values.
+     * This set of mathematical operation functions implement the corresponding
+     * IEEE 754-2008 operations on self and other.
+     * The operations are commutative, so a.add(b) is equivalent to b.add(a).
+     * Rounding of results that require a precision greater than 34 decimal digits
+     * is performed using the supplied rounding mode (defaulting to kRoundTiesToEven).
+     * NaNs and infinities are handled according to the IEEE 754-2008 specification.
      */
-    Decimal128 add(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 subtract(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 multiply(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 divide(const Decimal128& rhs, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 add(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 subtract(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 multiply(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 divide(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
 
     /**
      * This function quantizes the current decimal given a quantum reference
@@ -165,14 +165,14 @@ public:
      * This set of comparison operations takes a single Decimal128 and returns a boolean
      * noting the value of the comparison. These comparisons are not total ordered, but
      * comply with the IEEE 754-2008 spec. The comparison returns true if the caller
-     * is <equal, notequal, greater, greaterequal, less, lessequal> the argument (rhs).
+     * is <equal, notequal, greater, greaterequal, less, lessequal> the argument (other).
      */
-    bool isEqual(const Decimal128& rhs);
-    bool isNotEqual(const Decimal128& rhs);
-    bool isGreater(const Decimal128& rhs);
-    bool isGreaterEqual(const Decimal128& rhs);
-    bool isLess(const Decimal128& rhs);
-    bool isLessEqual(const Decimal128& rhs);
+    bool isEqual(const Decimal128& other);
+    bool isNotEqual(const Decimal128& other);
+    bool isGreater(const Decimal128& other);
+    bool isGreaterEqual(const Decimal128& other);
+    bool isLess(const Decimal128& other);
+    bool isLessEqual(const Decimal128& other);
 
 private:
     Decimal128Value _value;

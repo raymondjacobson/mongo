@@ -1939,6 +1939,9 @@ def doConfigure(myenv):
             myenv.ConfError("Cannot find wiredtiger headers")
         conf.FindSysLibDep("wiredtiger", ["wiredtiger"])
 
+    if use_system_version_of_library("intel_decimal128"):
+        conf.FindSysLibDep("intel_decimal128", ["bid"])
+
     if use_system_version_of_library("boost"):
         if not conf.CheckCXXHeader( "boost/filesystem/operations.hpp" ):
             myenv.ConfError("can't find boost headers")

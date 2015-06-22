@@ -323,11 +323,10 @@ asioEnv.Library(
         'shim_asio.cpp'
     ])
 
-
 if use_system_version_of_library("intel_decimal128"):
     intelDecimal128Env = env.Clone(
         SYSLIBDEPS=[
-            env['LIBDEPS_DECIMAL128_SYSLIBDEP'],
+            env['LIBDEPS_INTEL_DECIMAL128_SYSLIBDEP'],
         ])
 else:
     intelDecimal128Env = env.Clone()

@@ -30,6 +30,7 @@
 #include <array>
 #include <string>
 #include <utility>
+#include <iostream>
 
 #include "mongo/platform/endian.h"
 #include "mongo/unittest/unittest.h"

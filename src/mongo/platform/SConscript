@@ -17,10 +17,5 @@ env.CppUnitTest('bits_test', 'bits_test.cpp')
 env.CppUnitTest('endian_test', 'endian_test.cpp')
 env.CppUnitTest('process_id_test', 'process_id_test.cpp', LIBDEPS=['platform'])
 env.CppUnitTest('random_test', 'random_test.cpp', LIBDEPS=['platform'])
-
-env = env.Clone()
-# env.InjectThirdPartyIncludePaths(libraries=['intel_decimal128'])
 env.CppUnitTest('decimal128_test', 'decimal128_test.cpp',
-	LIBPATH=['/Users/raymondjacobson/playground/IntelRDFPMathLib20U1/LIBRARY/'],
-	LIBS=['bid'],)
-	# LIBDEPS=['$BUILD_DIR/third_party/shim_intel_decimal128'])
+	LIBDEPS=['$BUILD_DIR/third_party/shim_intel_decimal128'])
