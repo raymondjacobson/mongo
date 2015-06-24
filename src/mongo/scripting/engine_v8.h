@@ -209,6 +209,7 @@ namespace mongo {
         virtual double getNumber(const char* field);
         virtual int getNumberInt(const char* field);
         virtual long long getNumberLongLong(const char* field);
+        virtual Decimal128 getNumberDecimal(const char* field);
         virtual std::string getString(const char* field);
         virtual bool getBoolean(const char* field);
         virtual BSONObj getObject(const char* field);
@@ -345,6 +346,7 @@ namespace mongo {
         v8::Handle<v8::FunctionTemplate> BinDataFT()        const { return _BinDataFT; }
         v8::Handle<v8::FunctionTemplate> NumberLongFT()     const { return _NumberLongFT; }
         v8::Handle<v8::FunctionTemplate> NumberIntFT()      const { return _NumberIntFT; }
+        v8::Handle<v8::FunctionTemplate> NumberDecimalFT()  const { return _NumberDecimalFT; }
         v8::Handle<v8::FunctionTemplate> TimestampFT()      const { return _TimestampFT; }
         v8::Handle<v8::FunctionTemplate> MinKeyFT()         const { return _MinKeyFT; }
         v8::Handle<v8::FunctionTemplate> MaxKeyFT()         const { return _MaxKeyFT; }
@@ -451,6 +453,7 @@ namespace mongo {
         v8::Persistent<v8::FunctionTemplate> _BinDataFT;
         v8::Persistent<v8::FunctionTemplate> _NumberLongFT;
         v8::Persistent<v8::FunctionTemplate> _NumberIntFT;
+        v8::Persistent<v8::FunctionTemplate> _NumberDecimalFT;
         v8::Persistent<v8::FunctionTemplate> _TimestampFT;
         v8::Persistent<v8::FunctionTemplate> _MinKeyFT;
         v8::Persistent<v8::FunctionTemplate> _MaxKeyFT;

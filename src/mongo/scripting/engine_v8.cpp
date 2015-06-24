@@ -741,6 +741,11 @@ namespace mongo {
         return get(field)->ToInteger()->Value();
     }
 
+    Decimal128 V8Scope::getNumberDecimal(const char* field) {
+        V8_SIMPLE_HEADER
+        return Decimal128(toSTLString(get(field)->ToString()));
+    }
+
     string V8Scope::getString(const char *field) {
         V8_SIMPLE_HEADER
         return toSTLString(get(field));
@@ -776,6 +781,13 @@ namespace mongo {
         scope->injectV8Method("toNumber", numberIntToNumber, proto);
         scope->injectV8Method("toString", numberIntToString, proto);
         return numberInt;
+    }
+
+    v8::Handle<v8::FunctionTemplate> getNumberDecimalFunctionTemplate(V8Scope* scope) {
+        v8::Handle<v8::FunctionTemplate> numberDecimal = scope->createV8Function(numberDecimalInit);
+        v8::Handle<v8::ObjectTemplate> proto = numberDecimal->PrototypeTemplate();
+        scope->injectV8Method("toString", numberDecimalToString, proto);
+        return numberDecimal;
     }
 
     v8::Handle<v8::FunctionTemplate> getBinDataFunctionTemplate(V8Scope* scope) {
@@ -1295,6 +1307,7 @@ namespace mongo {
         _BinDataFT    = FTPtr::New(getBinDataFunctionTemplate(this));
         _NumberLongFT = FTPtr::New(getNumberLongFunctionTemplate(this));
         _NumberIntFT  = FTPtr::New(getNumberIntFunctionTemplate(this));
+        _NumberDecimalFT = FTPtr::New(getNumberDecimalFunctionTemplate(this));
         _TimestampFT  = FTPtr::New(getTimestampFunctionTemplate(this));
         _MinKeyFT     = FTPtr::New(getMinKeyFunctionTemplate(this));
         _MaxKeyFT     = FTPtr::New(getMaxKeyFunctionTemplate(this));
@@ -1302,6 +1315,7 @@ namespace mongo {
         injectV8Function("BinData", BinDataFT(), _global);
         injectV8Function("NumberLong", NumberLongFT(), _global);
         injectV8Function("NumberInt", NumberIntFT(), _global);
+        injectV8Function("NumberDecimal", NumberDecimalFT(), _global);
         injectV8Function("Timestamp", TimestampFT(), _global);
 
         // These are instances created from the functions, not the functions themselves
@@ -1400,6 +1414,7 @@ namespace mongo {
         v8::Handle<v8::Value> argv[3];      // arguments for v8 instance constructors
         v8::Local<v8::Object> instance;     // instance of v8 type
         uint64_t nativeUnsignedLong;        // native representation of NumberLong
+        Decimal128 nativeDecimal;           // native representation of NumberDecimal
 
         switch (elem.type()) {
         case mongo::Code:
@@ -1500,6 +1515,14 @@ namespace mongo {
                                            (nativeUnsignedLong & 0x00000000ffffffff));
                 return NumberLongFT()->GetFunction()->NewInstance(3, argv);
             }
+        case mongo::NumberDecimal: {
+            nativeDecimal = elem.numberDecimal();
+            // Always store number decimals as number decimals, never cast
+            // TODO: Something besides strings?
+            std::string decString = nativeDecimal.toString();
+            argv[0] = v8::String::New(decString.c_str());
+            return NumberDecimalFT()->GetFunction()->NewInstance(1, argv);
+        }
         case mongo::MinKey:
             return MinKeyFT()->GetFunction()->NewInstance();
         case mongo::MaxKey:
@@ -1588,7 +1611,6 @@ namespace mongo {
                                   BSONObj* originalParent) {
         verify(value->IsObject());
         v8::Handle<v8::Object> obj = value.As<v8::Object>();
-
         if (value->IsRegExp()) {
             v8ToMongoRegex(b, elementName, obj.As<v8::RegExp>());
         } else if (ObjectIdFT()->HasInstance(value)) {
@@ -1597,6 +1619,8 @@ namespace mongo {
             b.append(elementName, numberLongVal(this, obj));
         } else if (NumberIntFT()->HasInstance(value)) {
             b.append(elementName, numberIntVal(this, obj));
+        } else if (NumberDecimalFT()->HasInstance(value)) {
+            b.append(elementName, numberDecimalVal(this, obj));
         } else if (DBPointerFT()->HasInstance(value)) {
             v8ToMongoDBRef(b, elementName, obj);
         } else if (BinDataFT()->HasInstance(value)) {

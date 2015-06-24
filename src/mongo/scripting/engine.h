@@ -75,6 +75,10 @@ namespace mongo {
         virtual long long getNumberLongLong(const char* field) {
             return static_cast<long long>(getNumber(field));
         }
+        // Get the decimal value of a string stored in a scope
+        virtual Decimal128 getNumberDecimal(const char* field) {
+            return Decimal128(getString(field));
+        }
 
         virtual void setElement(const char* field, const BSONElement& e) = 0;
         virtual void setNumber(const char* field, double val) = 0;
