@@ -319,6 +319,12 @@ if env.TargetOSIs('windows'):
         float53_object('dpml_cbrt_t_table', 'dpml_cbrt_t_table'),
         float53_object('dpml_special_exp_t', 'dpml_exp', [('SPECIAL_EXP', '1')]),
     ]
+
+    if processor == 'i386':
+        extra_objects += [
+            float53_object('dpml_log2_t', 'dpml_log', ['LOG2P'])
+        ]
+
     files += extra_objects
 
 env.Library(
