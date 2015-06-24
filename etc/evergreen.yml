@@ -19,7 +19,7 @@
 # - 'build_variant' (references the executing task's buildvariant).
 # - 'config_root' (references the root directory for the executor's configuration artifacts).
 
-stepback: true
+stepback: false
 
 ## Some variables for convenience:
 variables:
@@ -290,6 +290,8 @@ tasks:
 
           rm -rf ${install_directory|/data/mongo-install-directory}
           ${scons|scons} ${compile_flags|} --distname=binaries --use-new-tools all dist distsrc-${ext|tgz} ${msi_target|}
+
+          ./build/unittests/decimal128_test
 
           ${python|python} buildscripts/generate_compile_expansions.py version.json | \
             tee compile_expansions.yml
@@ -1537,572 +1539,572 @@ buildvariants:
   - name: compile
     distros:
     - rhel55
-  - name: lint
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: inMemoryExperiment
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_op_command
-  - name: jsCore_op_command_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: lint
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: aggregation_auth
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: dur_jscore_passthrough
+  # - name: failpoints
+  # - name: failpoints_auth
+  # - name: gle_auth
+  # - name: gle_auth_WT
+  # - name: gle_auth_write_cmd
+  # - name: gle_auth_write_cmd_WT
+  # - name: gle_auth_basics_passthrough
+  # - name: gle_auth_basics_passthrough_WT
+  # - name: gle_auth_basics_passthrough_write_cmd
+  # - name: gle_auth_basics_passthrough_write_cmd_WT
+  # - name: sharding_gle_auth_basics_passthrough
+  # - name: sharding_gle_auth_basics_passthrough_WT
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+  # - name: inMemoryExperiment
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_auth
+  # - name: jsCore_op_command
+  # - name: jsCore_op_command_WT
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: multiversion
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replicasets_auth
+  # - name: replication
+  # - name: replication_WT
+  # - name: replication_auth
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: sharding_auth
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
-- name: linux-64-debug
-  display_name: Linux 64-bit DEBUG
-  modules: ~
-  run_on:
-  - rhel55
-  - rhel55-test
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux-debug
-    push_arch: x86_64
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    compile_flags: --dbg=on --opt=on -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/dbg_on/opt_on"
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: failpoints_auth
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
+# - name: linux-64-debug
+#   display_name: Linux 64-bit DEBUG
+#   modules: ~
+#   run_on:
+#   - rhel55
+#   - rhel55-test
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux-debug
+#     push_arch: x86_64
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     compile_flags: --dbg=on --opt=on -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/dbg_on/opt_on"
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: tool
+#   - name: tool_WT
 
-- name: linux-64-duroff
-  display_name: Linux 64-bit DUR OFF
-  modules: ~
-  run_on:
-  - rhel55
-  - rhel55-test
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux-duroff
-    push_arch: x86_64
-    compile_flags: -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/durableDefaultOff"
-    has_debugsymbols: true
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure --nojournal
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: aggregation
-  - name: aggregation_auth
-  - name: auth
-  - name: dbtest
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: jsCore
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_rs
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthroughWithMongod
-  - name: bulk_gle_passthrough
-  - name: parallel
-  - name: parallel_compatibility
-  - name: concurrency
-  - name: replicasets
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_auth
-  - name: slow1
-  - name: slow2
-  - name: sharding_jscore_passthrough
-  - name: tool
+# - name: linux-64-duroff
+#   display_name: Linux 64-bit DUR OFF
+#   modules: ~
+#   run_on:
+#   - rhel55
+#   - rhel55-test
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux-duroff
+#     push_arch: x86_64
+#     compile_flags: -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/durableDefaultOff"
+#     has_debugsymbols: true
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure --nojournal
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: aggregation
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: dbtest
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: jsCore
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_rs
+#   - name: mmap
+#   - name: mongosTest
+#   - name: noPassthrough
+#   - name: noPassthroughWithMongod
+#   - name: bulk_gle_passthrough
+#   - name: parallel
+#   - name: parallel_compatibility
+#   - name: concurrency
+#   - name: replicasets
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow2
+#   - name: sharding_jscore_passthrough
+#   - name: tool
 
-- name: linux-64-lsm
-  stepback: false
-  display_name: Linux 64-bit LSM
-  run_on:
-  - rhel55
-  - rhel55-test
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    compile_flags: -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --release --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure --wiredTigerCollectionConfig=type=lsm --wiredTigerIndexConfig=type=lsm
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: aggregation_WT
-  - name: auth_WT
-  - name: dbtest_WT
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore_WT
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs_WT
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough_WT
-  - name: parallel_WT
-  - name: parallel_compatibility_WT
-  - name: concurrency_WT
-  - name: replicasets_WT
-  - name: replication_WT
-  - name: sharding_WT
-  - name: slow1_WT
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough_WT
-  - name: tool_WT
+# - name: linux-64-lsm
+#   stepback: false
+#   display_name: Linux 64-bit LSM
+#   run_on:
+#   - rhel55
+#   - rhel55-test
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     compile_flags: -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --release --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure --wiredTigerCollectionConfig=type=lsm --wiredTigerIndexConfig=type=lsm
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: aggregation_WT
+#   - name: auth_WT
+#   - name: dbtest_WT
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore_WT
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel_WT
+#   - name: parallel_compatibility_WT
+#   - name: concurrency_WT
+#   - name: replicasets_WT
+#   - name: replication_WT
+#   - name: sharding_WT
+#   - name: slow1_WT
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough_WT
+#   - name: tool_WT
 
-- name: ubuntu1204
-  display_name: SSL Ubuntu 1204 64-bit
-  modules: ~
-  run_on:
-  - ubuntu1204-test
-  expansions:
-    tooltags: "-tags ssl"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-ubuntu1204
-    compile_flags: --ssl --distmod=ubuntu1204 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1204-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mongosTest
-  - name: mmap
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: ubuntu1204
+#   display_name: SSL Ubuntu 1204 64-bit
+#   modules: ~
+#   run_on:
+#   - ubuntu1204-test
+#   expansions:
+#     tooltags: "-tags ssl"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-ubuntu1204
+#     compile_flags: --ssl --distmod=ubuntu1204 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1204-build
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mongosTest
+#   - name: mmap
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: ubuntu1404
-  display_name: SSL Ubuntu 1404 64-bit
-  modules: ~
-  run_on:
-  - ubuntu1404-test
-  expansions:
-    tooltags: "-tags ssl"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-ubuntu1404
-    compile_flags: --ssl --distmod=ubuntu1404 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1404-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: ubuntu1404
+#   display_name: SSL Ubuntu 1404 64-bit
+#   modules: ~
+#   run_on:
+#   - ubuntu1404-test
+#   expansions:
+#     tooltags: "-tags ssl"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-ubuntu1404
+#     compile_flags: --ssl --distmod=ubuntu1404 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1404-build
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: enterprise-linux-64-amazon-ami
-  display_name: Enterprise Linux 64-bit Amazon AMI
-  modules:
-  - enterprise
-  run_on:
-  - linux-64-amzn-test
-  expansions:
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-amzn64
-    compile_flags: --ssl --ssl-fips-capability --distmod=amzn64 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - linux-64-amzn-build
-  - name: aggregation_auth
-  - name: audit
-  - name: audit_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: failpoints_auth
-  - name: jsCore_auth
-  - name: mmap
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: replicasets_auth
-  - name: replication_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-linux-64-amazon-ami
+#   display_name: Enterprise Linux 64-bit Amazon AMI
+#   modules:
+#   - enterprise
+#   run_on:
+#   - linux-64-amzn-test
+#   expansions:
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-amzn64
+#     compile_flags: --ssl --ssl-fips-capability --distmod=amzn64 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - linux-64-amzn-build
+#   - name: aggregation_auth
+#   - name: audit
+#   - name: audit_WT
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: failpoints_auth
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: replicasets_auth
+#   - name: replication_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: amazon
-  display_name: SSL Amazon 64-bit
-  modules: ~
-  run_on:
-  - linux-64-amzn-test
-  expansions:
-    tooltags: "-tags 'ssl'"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-amazon
-    compile_flags: --ssl --distmod=amazon -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - linux-64-amzn-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: amazon
+#   display_name: SSL Amazon 64-bit
+#   modules: ~
+#   run_on:
+#   - linux-64-amzn-test
+#   expansions:
+#     tooltags: "-tags 'ssl'"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-amazon
+#     compile_flags: --ssl --distmod=amazon -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - linux-64-amzn-build
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
 - name: linux-32
   display_name: Linux 32-bit
@@ -2124,58 +2126,58 @@ buildvariants:
   - name: compile
     distros:
     - rhel55
-  - name: aggregation
-  - name: auth
-  - name: dbtest
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_compatibility
-  - name: mmap
-  - name: mongosTest
-  - name: replicasets
-  - name: replication
-  - name: sharding
-  - name: tool
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: auth
+  # - name: dbtest
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: jsCore
+  # - name: jsCore_compatibility
+  # - name: mmap
+  # - name: mongosTest
+  # - name: replicasets
+  # - name: replication
+  # - name: sharding
+  # - name: tool
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
-- name: linux-32-debug
-  display_name: Linux 32-bit DEBUG
-  modules: ~
-  run_on:
-  - rhel55-32
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go32 PATH=/opt/go32/bin:$PATH
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux-debug
-    push_arch: i686
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure -j1  # Avoid starting too many mongod's on 32-bit systems.
-    has_debugsymbols: true
-    compile_flags: --dbg=on --distarch=i686 --opt=on -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/debug" --wiredtiger=off CCFLAGS="-m32" LINKFLAGS="-m32"
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: aggregation
-  - name: auth
-  - name: dbtest
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_compatibility
-  - name: mmap
-  - name: mongosTest
-  - name: replicasets
-  - name: replication
-  - name: sharding
-  - name: tool
+# - name: linux-32-debug
+#   display_name: Linux 32-bit DEBUG
+#   modules: ~
+#   run_on:
+#   - rhel55-32
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go32 PATH=/opt/go32/bin:$PATH
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux-debug
+#     push_arch: i686
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure -j1  # Avoid starting too many mongod's on 32-bit systems.
+#     has_debugsymbols: true
+#     compile_flags: --dbg=on --distarch=i686 --opt=on -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/debug" --wiredtiger=off CCFLAGS="-m32" LINKFLAGS="-m32"
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: aggregation
+#   - name: auth
+#   - name: dbtest
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: jsCore
+#   - name: jsCore_compatibility
+#   - name: mmap
+#   - name: mongosTest
+#   - name: replicasets
+#   - name: replication
+#   - name: sharding
+#   - name: tool
 
 ###########################################
 #         Windows buildvariants           #
@@ -2204,66 +2206,66 @@ buildvariants:
   - name: compile
     distros:
     - windows-64-vs2013-compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: gle_auth
+  # - name: gle_auth_WT
+  # - name: gle_auth_write_cmd
+  # - name: gle_auth_write_cmd_WT
+  # - name: gle_auth_basics_passthrough
+  # - name: gle_auth_basics_passthrough_WT
+  # - name: gle_auth_basics_passthrough_write_cmd
+  # - name: gle_auth_basics_passthrough_write_cmd_WT
+  # - name: sharding_gle_auth_basics_passthrough
+  # - name: sharding_gle_auth_basics_passthrough_WT
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replication
+  # - name: replication_WT
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+    # distros:
+    # - rhel55-test
 
 - name: windows-64-2k8
   display_name: Windows 64-bit 2008R2+
@@ -2288,235 +2290,235 @@ buildvariants:
   - name: compile
     distros:
     - windows-64-vs2013-compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replication
+  # - name: replication_WT
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
-- name: windows-64-2k8-debug
-  display_name: Windows 64-bit 2008R2+ DEBUG
-  modules: ~
-  run_on:
-  - windows-64-vs2013-test
-  expansions:
-    exe: ".exe"
-    push_path: win32
-    push_bucket: downloads.mongodb.org
-    push_name: win32-debug
-    push_arch: x86_64-2008plus
-    content_type: application/zip
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    compile_flags: --dbg=on --opt=on --win-version-min=ws08r2 -j$(grep -c ^processor /proc/cpuinfo) --distmod=2008plus
-    ext: zip
-    # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
-    is_windows: true
-  tasks:
-  - name: compile
-    distros:
-    - windows-64-vs2013-compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: tool
-  - name: tool_WT
+# # - name: windows-64-2k8-debug
+# #   display_name: Windows 64-bit 2008R2+ DEBUG
+# #   modules: ~
+# #   run_on:
+# #   - windows-64-vs2013-test
+# #   expansions:
+# #     exe: ".exe"
+# #     push_path: win32
+# #     push_bucket: downloads.mongodb.org
+# #     push_name: win32-debug
+# #     push_arch: x86_64-2008plus
+# #     content_type: application/zip
+# #     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+# #     test_flags: --continueOnFailure
+# #     compile_flags: --dbg=on --opt=on --win-version-min=ws08r2 -j$(grep -c ^processor /proc/cpuinfo) --distmod=2008plus
+# #     ext: zip
+# #     # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
+# #     is_windows: true
+# #   tasks:
+# #   - name: compile
+# #     distros:
+# #     - windows-64-vs2013-compile
+# #   - name: aggregation
+# #   - name: aggregation_WT
+# #   - name: auth
+# #   - name: auth_WT
+# #   - name: dbtest
+# #   - name: dbtest_WT
+# #   - name: disk
+# #   - name: durability
+# #   - name: failpoints
+# #   - name: jsCore
+# #   - name: jsCore_WT
+# #   - name: jsCore_compatibility
+# #   - name: jsCore_compatibility_WT
+# #   - name: jsCore_small_oplog
+# #   - name: jsCore_small_oplog_WT
+# #   - name: jsCore_small_oplog_rs
+# #   - name: jsCore_small_oplog_rs_WT
+# #   - name: mmap
+# #   - name: mongosTest
+# #   - name: noPassthrough
+# #   - name: noPassthrough_WT
+# #   - name: noPassthroughWithMongod
+# #   - name: noPassthroughWithMongod_WT
+# #   - name: bulk_gle_passthrough
+# #   - name: bulk_gle_passthrough_WT
+# #   - name: parallel
+# #   - name: parallel_WT
+# #   - name: parallel_compatibility
+# #   - name: parallel_compatibility_WT
+# #   - name: concurrency
+# #   - name: concurrency_WT
+# #   - name: replicasets
+# #   - name: replicasets_WT
+# #   - name: replication
+# #   - name: replication_WT
+# #   - name: sharding
+# #   - name: sharding_WT
+# #   - name: tool
+# #   - name: tool_WT
 
-- name: enterprise-windows-64
-  display_name: Enterprise Windows 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - windows-64-vs2013-test
-  expansions:
-    tooltags: "-tags 'ssl sasl'"
-    exe: ".exe"
-    gorootvars: 'PATH="/cygdrive/c/mingw-w64/x86_64-4.9.1-posix-seh-rt_v3-rev1/mingw64/bin:/cygdrive/c/sasl/:$PATH"'
-    push_path: win32
-    push_bucket: downloads.10gen.com
-    push_name: win32
-    push_arch: x86_64-enterprise-windows-64
-    msi_target: msi
-    content_type: application/zip
-    compile_flags: --release --ssl --ssl-fips-capability --distmod=windows-64 CPPPATH="c:/openssl/include c:/sasl/include c:/snmp/include" LIBPATH="c:/openssl/lib c:/sasl/lib c:/snmp/lib" -j$(grep -c ^processor /proc/cpuinfo) --dynamic-windows --win-version-min=ws08r2 --variant-dir=win32
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    ext: zip
-    # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
-    is_windows: true
-  tasks:
-  - name: compile
-    distros:
-    - windows-64-vs2013-compile
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-windows-64
+#   display_name: Enterprise Windows 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - windows-64-vs2013-test
+#   expansions:
+#     tooltags: "-tags 'ssl sasl'"
+#     exe: ".exe"
+#     gorootvars: 'PATH="/cygdrive/c/mingw-w64/x86_64-4.9.1-posix-seh-rt_v3-rev1/mingw64/bin:/cygdrive/c/sasl/:$PATH"'
+#     push_path: win32
+#     push_bucket: downloads.10gen.com
+#     push_name: win32
+#     push_arch: x86_64-enterprise-windows-64
+#     msi_target: msi
+#     content_type: application/zip
+#     compile_flags: --release --ssl --ssl-fips-capability --distmod=windows-64 CPPPATH="c:/openssl/include c:/sasl/include c:/snmp/include" LIBPATH="c:/openssl/lib c:/sasl/lib c:/snmp/lib" -j$(grep -c ^processor /proc/cpuinfo) --dynamic-windows --win-version-min=ws08r2 --variant-dir=win32
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     ext: zip
+#     # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
+#     is_windows: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - windows-64-vs2013-compile
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: windows-64-2k8-ssl
-  display_name: SSL Windows 64-bit 2008R2+
-  modules: ~
-  run_on:
-  - windows-64-vs2013-test
-  expansions:
-    exe: ".exe"
-    gorootvars: 'PATH="/cygdrive/c/mingw-w64/x86_64-4.9.1-posix-seh-rt_v3-rev1/mingw64/bin:/cygdrive/c/sasl/:$PATH"'
-    tooltags: "-tags ssl"
-    push_path: win32
-    push_bucket: downloads.mongodb.org
-    push_name: win32
-    push_arch: x86_64-2008plus-ssl
-    msi_target: msi
-    content_type: application/zip
-    compile_flags: --release --ssl --distmod=2008plus-ssl CPPPATH="c:/openssl/include" LIBPATH="c:/openssl/lib" -j$(grep -c ^processor /proc/cpuinfo) --dynamic-windows --win-version-min=ws08r2 --variant-dir=win32
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    ext: zip
-    # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
-    is_windows: true
-  tasks:
-  - name: compile
-    distros:
-    - windows-64-vs2013-compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: windows-64-2k8-ssl
+#   display_name: SSL Windows 64-bit 2008R2+
+#   modules: ~
+#   run_on:
+#   - windows-64-vs2013-test
+#   expansions:
+#     exe: ".exe"
+#     gorootvars: 'PATH="/cygdrive/c/mingw-w64/x86_64-4.9.1-posix-seh-rt_v3-rev1/mingw64/bin:/cygdrive/c/sasl/:$PATH"'
+#     tooltags: "-tags ssl"
+#     push_path: win32
+#     push_bucket: downloads.mongodb.org
+#     push_name: win32
+#     push_arch: x86_64-2008plus-ssl
+#     msi_target: msi
+#     content_type: application/zip
+#     compile_flags: --release --ssl --distmod=2008plus-ssl CPPPATH="c:/openssl/include" LIBPATH="c:/openssl/lib" -j$(grep -c ^processor /proc/cpuinfo) --dynamic-windows --win-version-min=ws08r2 --variant-dir=win32
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     ext: zip
+#     # TODO: Remove the "is_windows" expansion after PyYAML is installed on all build variants.
+#     is_windows: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - windows-64-vs2013-compile
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replication
+#   - name: replication_WT
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: tool
+#   - name: tool_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
 - name: windows-32
   display_name: Windows 32-bit
@@ -2542,23 +2544,23 @@ buildvariants:
   - name: compile
     distros:
     - windows-64-vs2013-compile
-  - name: aggregation
-  - name: auth
-  - name: dbtest
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_compatibility
-  - name: mmap
-  - name: mongosTest
-  - name: replicasets
-  - name: replication
-  - name: sharding
-  - name: tool
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: auth
+  # - name: dbtest
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: jsCore
+  # - name: jsCore_compatibility
+  # - name: mmap
+  # - name: mongosTest
+  # - name: replicasets
+  # - name: replication
+  # - name: sharding
+  # - name: tool
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #             OSX buildvariants           #
@@ -2579,702 +2581,702 @@ buildvariants:
     test_flags: --continueOnFailure
   tasks:
   - name: compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: gle_auth
+  # - name: gle_auth_WT
+  # - name: gle_auth_write_cmd
+  # - name: gle_auth_write_cmd_WT
+  # - name: gle_auth_basics_passthrough
+  # - name: gle_auth_basics_passthrough_WT
+  # - name: gle_auth_basics_passthrough_write_cmd
+  # - name: gle_auth_basics_passthrough_write_cmd_WT
+  # - name: sharding_gle_auth_basics_passthrough
+  # - name: sharding_gle_auth_basics_passthrough_WT
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replication
+  # - name: replication_WT
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
-- name: osx-108-ssl
-  display_name: SSL OS X 10.8
-  modules: ~
-  run_on:
-  - osx-108
-  expansions:
-    push_path: osx
-    push_bucket: downloads.mongodb.org
-    push_name: osx
-    push_arch: x86_64
-    tooltags: "-tags ssl"
-    compile_flags: --ssl --allocator=system -j$(sysctl -n hw.logicalcpu) --release --osx-version-min=10.7 --libc++
-    num_jobs_unittests: $(sysctl -n hw.logicalcpu)
-    test_flags: --continueOnFailure
-  tasks:
-  - name: compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: osx-108-ssl
+#   display_name: SSL OS X 10.8
+#   modules: ~
+#   run_on:
+#   - osx-108
+#   expansions:
+#     push_path: osx
+#     push_bucket: downloads.mongodb.org
+#     push_name: osx
+#     push_arch: x86_64
+#     tooltags: "-tags ssl"
+#     compile_flags: --ssl --allocator=system -j$(sysctl -n hw.logicalcpu) --release --osx-version-min=10.7 --libc++
+#     num_jobs_unittests: $(sysctl -n hw.logicalcpu)
+#     test_flags: --continueOnFailure
+#   tasks:
+#   - name: compile
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replication
+#   - name: replication_WT
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: osx-108-debug
-  display_name: OS X 10.8 DEBUG
-  modules: ~
-  run_on:
-  - osx-108
-  expansions:
-    push_path: osx
-    push_bucket: downloads.mongodb.org
-    push_name: osx-debug
-    push_arch: x86_64
-    num_jobs_unittests: $(sysctl -n hw.logicalcpu)
-    test_flags: --continueOnFailure
-    compile_flags: --dbg=on --opt=on --allocator=system -j$(sysctl -n hw.logicalcpu) --osx-version-min=10.7 --libc++
-  tasks:
-  - name: compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: mmap
-  - name: mongosTest
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replication
-  - name: replication_WT
-  - name: sharding
-  - name: sharding_WT
-  - name: tool
-  - name: tool_WT
+# - name: osx-108-debug
+#   display_name: OS X 10.8 DEBUG
+#   modules: ~
+#   run_on:
+#   - osx-108
+#   expansions:
+#     push_path: osx
+#     push_bucket: downloads.mongodb.org
+#     push_name: osx-debug
+#     push_arch: x86_64
+#     num_jobs_unittests: $(sysctl -n hw.logicalcpu)
+#     test_flags: --continueOnFailure
+#     compile_flags: --dbg=on --opt=on --allocator=system -j$(sysctl -n hw.logicalcpu) --osx-version-min=10.7 --libc++
+#   tasks:
+#   - name: compile
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replication
+#   - name: replication_WT
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: tool
+#   - name: tool_WT
 
 ###########################################
 #          Redhat buildvariants           #
 ###########################################
 
-- name: enterprise-rhel-57-64-bit
-  display_name: Enterprise RHEL 5.7 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - rhel57-test
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-rhel57
-    compile_flags: --ssl --ssl-fips-capability --distmod=rhel57 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-rhel-57-64-bit
+#   display_name: Enterprise RHEL 5.7 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - rhel57-test
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-rhel57
+#     compile_flags: --ssl --ssl-fips-capability --distmod=rhel57 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: enterprise-rhel-62-64-bit
-  display_name: Enterprise RHEL 6.2 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - rhel62-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-rhel62
-    rlp_environment: MONGOD_UNITTEST_RLP_LANGUAGE_TEST_BTROOT=/opt/basis
-    compile_flags: --ssl --ssl-fips-capability --distmod=rhel62 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release" CPPPATH="/opt/basis/rlp/rlp/include /opt/basis/rlp/utilities/include" --use-basis-tech-rosette-linguistics-platform=on
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel62-build
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: mmap
-  - name: jsCore_auth
-  - name: replicasets_auth
-  - name: rlp
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-rhel-62-64-bit
+#   display_name: Enterprise RHEL 6.2 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - rhel62-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-rhel62
+#     rlp_environment: MONGOD_UNITTEST_RLP_LANGUAGE_TEST_BTROOT=/opt/basis
+#     compile_flags: --ssl --ssl-fips-capability --distmod=rhel62 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release" CPPPATH="/opt/basis/rlp/rlp/include /opt/basis/rlp/utilities/include" --use-basis-tech-rosette-linguistics-platform=on
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel62-build
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: mmap
+#   - name: jsCore_auth
+#   - name: replicasets_auth
+#   - name: rlp
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: enterprise-rhel-70-64-bit
-  display_name: Enterprise RHEL 7.0 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - rhel70
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-rhel70
-    compile_flags: --ssl --ssl-fips-capability --distmod=rhel70 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-rhel-70-64-bit
+#   display_name: Enterprise RHEL 7.0 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - rhel70
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-rhel70
+#     compile_flags: --ssl --ssl-fips-capability --distmod=rhel70 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: rhel55
-  display_name: SSL RHEL 5.5 64-bit
-  modules: ~
-  run_on:
-  - rhel55
-  - rhel55-test
-  expansions:
-    gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-rhel55
-    compile_flags: --ssl --distmod=rhel55 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel55
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: rhel55
+#   display_name: SSL RHEL 5.5 64-bit
+#   modules: ~
+#   run_on:
+#   - rhel55
+#   - rhel55-test
+#   expansions:
+#     gitvars: LD_LIBRARY_PATH=/opt/openssl/lib64 #needed to workaround the old openSSL on rhel55 builders.
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-rhel55
+#     compile_flags: --ssl --distmod=rhel55 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel55
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: rhel62
-  display_name: SSL RHEL 6.2 64-bit
-  modules: ~
-  run_on:
-  - rhel62-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags ssl"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-rhel62
-    compile_flags: --ssl --distmod=rhel62 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel62-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: rhel62
+#   display_name: SSL RHEL 6.2 64-bit
+#   modules: ~
+#   run_on:
+#   - rhel62-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags ssl"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-rhel62
+#     compile_flags: --ssl --distmod=rhel62 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel62-build
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: rhel70
-  display_name: SSL RHEL 7.0 64-bit
-  modules: ~
-  run_on:
-  - rhel70
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags ssl"
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-rhel70
-    compile_flags: --ssl --distmod=rhel70 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - rhel70
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: rhel70
+#   display_name: SSL RHEL 7.0 64-bit
+#   modules: ~
+#   run_on:
+#   - rhel70
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags ssl"
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-rhel70
+#     compile_flags: --ssl --distmod=rhel70 -j$(grep -c ^processor /proc/cpuinfo) --release CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - rhel70
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-###########################################
-#          Ubuntu buildvariants           #
-###########################################
+# ###########################################
+# #          Ubuntu buildvariants           #
+# ###########################################
 
-- name: enterprise-ubuntu1204-64
-  display_name: Enterprise Ubuntu 1204 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - ubuntu1204-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-ubuntu1204
-    compile_flags: --ssl --ssl-fips-capability --distmod=ubuntu1204 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1204-build
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-ubuntu1204-64
+#   display_name: Enterprise Ubuntu 1204 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - ubuntu1204-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-ubuntu1204
+#     compile_flags: --ssl --ssl-fips-capability --distmod=ubuntu1204 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1204-build
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-- name: enterprise-ubuntu1404-64
-  display_name: Enterprise Ubuntu 1404 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - ubuntu1404-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-ubuntu1404
-    compile_flags: --ssl --ssl-fips-capability --distmod=ubuntu1404 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1404-build
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-ubuntu1404-64
+#   display_name: Enterprise Ubuntu 1404 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - ubuntu1404-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-ubuntu1404
+#     compile_flags: --ssl --ssl-fips-capability --distmod=ubuntu1404 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1404-build
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
-###########################################
-#          SUSE buildvariants             #
-###########################################
+# ###########################################
+# #          SUSE buildvariants             #
+# ###########################################
 
-- name: enterprise-suse11-64
-  display_name: Enterprise SUSE 11 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - suse11-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-suse11
-    compile_flags: --ssl --ssl-fips-capability --distmod=suse11 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-    # TODO: Remove the "has_pyyaml_installed" expansion after PyYAML is installed on all build variants.
-    has_pyyaml_installed: true
-  tasks:
-  - name: compile
-    distros:
-    - suse11-build
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: mmap
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-suse11-64
+#   display_name: Enterprise SUSE 11 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - suse11-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-suse11
+#     compile_flags: --ssl --ssl-fips-capability --distmod=suse11 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#     # TODO: Remove the "has_pyyaml_installed" expansion after PyYAML is installed on all build variants.
+#     has_pyyaml_installed: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - suse11-build
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: mmap
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
 - name: suse11
   display_name: SSL SUSE 11 64-bit
@@ -3298,76 +3300,76 @@ buildvariants:
   - name: compile
     distros:
     - suse11-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: aggregation_auth
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: dur_jscore_passthrough
+  # - name: failpoints
+  # - name: failpoints_auth
+  # - name: gle_auth
+  # - name: gle_auth_WT
+  # - name: gle_auth_write_cmd
+  # - name: gle_auth_write_cmd_WT
+  # - name: gle_auth_basics_passthrough
+  # - name: gle_auth_basics_passthrough_WT
+  # - name: gle_auth_basics_passthrough_write_cmd
+  # - name: gle_auth_basics_passthrough_write_cmd_WT
+  # - name: sharding_gle_auth_basics_passthrough
+  # - name: sharding_gle_auth_basics_passthrough_WT
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_auth
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: multiversion
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replicasets_auth
+  # - name: replication
+  # - name: replication_WT
+  # - name: replication_auth
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: sharding_auth
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: ssl
+  # - name: sslSpecial
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          Solaris buildvariants          #
@@ -3389,76 +3391,76 @@ buildvariants:
     has_debugsymbols: true
   tasks:
   - name: compile
-  - name: aggregation
-  - name: auth
-  - name: dbtest
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: jsCore
-  - name: jsCore_compatibility
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_rs
-  - name: mmap
-  - name: mongosTest
-  - name: noPassthrough
-  - name: noPassthroughWithMongod
-  - name: bulk_gle_passthrough
-  - name: parallel
-  - name: parallel_compatibility
-  - name: concurrency
-  - name: replicasets
-  - name: replication
-  - name: sharding
-  - name: slow1
-  - name: slow2
-  - name: sharding_jscore_passthrough
-  - name: tool
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: auth
+  # - name: dbtest
+  # - name: disk
+  # - name: durability
+  # - name: failpoints
+  # - name: jsCore
+  # - name: jsCore_compatibility
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_rs
+  # - name: mmap
+  # - name: mongosTest
+  # - name: noPassthrough
+  # - name: noPassthroughWithMongod
+  # - name: bulk_gle_passthrough
+  # - name: parallel
+  # - name: parallel_compatibility
+  # - name: concurrency
+  # - name: replicasets
+  # - name: replication
+  # - name: sharding
+  # - name: slow1
+  # - name: slow2
+  # - name: sharding_jscore_passthrough
+  # - name: tool
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          Debian buildvariants           #
 ###########################################
 
-- name: enterprise-debian71-64
-  display_name: Enterprise Debian 7.1 64-bit
-  modules:
-  - enterprise
-  run_on:
-  - debian71-test
-  expansions:
-    gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
-    tooltags: "-tags 'ssl sasl'"
-    push_path: linux
-    push_bucket: downloads.10gen.com
-    push_name: linux
-    push_arch: x86_64-enterprise-debian71
-    compile_flags: --ssl --ssl-fips-capability --distmod=debian71 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    has_debugsymbols: true
-  tasks:
-  - name: compile
-    distros:
-    - debian71-build
-  - name: audit
-  - name: audit_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: jsCore_auth
-  - name: mmap
-  - name: replicasets_auth
-  - name: sasl
-  - name: sharding_auth
-  - name: snmp
-  - name: snmp_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+# - name: enterprise-debian71-64
+#   display_name: Enterprise Debian 7.1 64-bit
+#   modules:
+#   - enterprise
+#   run_on:
+#   - debian71-test
+#   expansions:
+#     gorootvars: GOROOT=/opt/go PATH="/opt/go/bin:$PATH"
+#     tooltags: "-tags 'ssl sasl'"
+#     push_path: linux
+#     push_bucket: downloads.10gen.com
+#     push_name: linux
+#     push_arch: x86_64-enterprise-debian71
+#     compile_flags: --ssl --ssl-fips-capability --distmod=debian71 --release -j$(grep -c ^processor /proc/cpuinfo) CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir="linux2/release"
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     has_debugsymbols: true
+#   tasks:
+#   - name: compile
+#     distros:
+#     - debian71-build
+#   - name: audit
+#   - name: audit_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: jsCore_auth
+#   - name: mmap
+#   - name: replicasets_auth
+#   - name: sasl
+#   - name: sharding_auth
+#   - name: snmp
+#   - name: snmp_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: push
+#     distros:
+#     - rhel55-test
 
 - name: debian71
   display_name: SSL Debian 7.1 64-bit
@@ -3480,304 +3482,304 @@ buildvariants:
   - name: compile
     distros:
     - debian71-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: aggregation
+  # - name: aggregation_WT
+  # - name: aggregation_auth
+  # - name: auth
+  # - name: auth_WT
+  # - name: dbtest
+  # - name: dbtest_WT
+  # - name: disk
+  # - name: durability
+  # - name: dur_jscore_passthrough
+  # - name: failpoints
+  # - name: failpoints_auth
+  # - name: gle_auth
+  # - name: gle_auth_WT
+  # - name: gle_auth_write_cmd
+  # - name: gle_auth_write_cmd_WT
+  # - name: gle_auth_basics_passthrough
+  # - name: gle_auth_basics_passthrough_WT
+  # - name: gle_auth_basics_passthrough_write_cmd
+  # - name: gle_auth_basics_passthrough_write_cmd_WT
+  # - name: sharding_gle_auth_basics_passthrough
+  # - name: sharding_gle_auth_basics_passthrough_WT
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd
+  # - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+  # - name: jsCore
+  # - name: jsCore_WT
+  # - name: jsCore_auth
+  # - name: jsCore_compatibility
+  # - name: jsCore_compatibility_WT
+  # - name: jsCore_small_oplog
+  # - name: jsCore_small_oplog_WT
+  # - name: jsCore_small_oplog_rs
+  # - name: jsCore_small_oplog_rs_WT
+  # - name: mmap
+  # - name: mongosTest
+  # - name: multiversion
+  # - name: noPassthrough
+  # - name: noPassthrough_WT
+  # - name: noPassthroughWithMongod
+  # - name: noPassthroughWithMongod_WT
+  # - name: bulk_gle_passthrough
+  # - name: bulk_gle_passthrough_WT
+  # - name: parallel
+  # - name: parallel_WT
+  # - name: parallel_compatibility
+  # - name: parallel_compatibility_WT
+  # - name: concurrency
+  # - name: concurrency_WT
+  # - name: replicasets
+  # - name: replicasets_WT
+  # - name: replicasets_auth
+  # - name: replication
+  # - name: replication_WT
+  # - name: replication_auth
+  # - name: sharding
+  # - name: sharding_WT
+  # - name: sharding_auth
+  # - name: slow1
+  # - name: slow1_WT
+  # - name: slow2
+  # - name: slow2_WT
+  # - name: sharding_jscore_passthrough
+  # - name: sharding_jscore_passthrough_WT
+  # - name: ssl
+  # - name: sslSpecial
+  # - name: tool
+  # - name: tool_WT
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ##############################################
 # mongo-partner storage engine buildvariants #
 ##############################################
 
-- name: ubuntu1404-rocksdb
-  display_name: Ubuntu 14.04 64-bit (RocksDB)
-  modules:
-  - rocksdb
-  run_on:
-  - ubuntu1404-test
-  expansions:
-    build_rocksdb: true
-    compile_flags: -j$(grep -c ^processor /proc/cpuinfo) --dbg=off --opt=on CPPPATH=$(readlink -f ../rocksdb/include/) LIBPATH=$(readlink -f ../rocksdb/) LIBS=rocksdb CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir=release
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure --storageEngine=rocksdb
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1404-build
-  # - name: lint
-  - name: aggregation
-  - name: aggregation_auth
-  - name: auth
-  - name: dbtest
-  # - name: disk
-  # - name: durability
-  # - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_write_cmd
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: jsCore
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_rs
-  - name: noPassthrough
-  - name: noPassthroughWithMongod
-  - name: bulk_gle_passthrough
-  - name: parallel
-  - name: parallel_compatibility
-  - name: concurrency
-  - name: replicasets
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_auth
-  - name: slow1
-  - name: slow2
-  - name: sharding_jscore_passthrough
+# - name: ubuntu1404-rocksdb
+#   display_name: Ubuntu 14.04 64-bit (RocksDB)
+#   modules:
+#   - rocksdb
+#   run_on:
+#   - ubuntu1404-test
+#   expansions:
+#     build_rocksdb: true
+#     compile_flags: -j$(grep -c ^processor /proc/cpuinfo) --dbg=off --opt=on CPPPATH=$(readlink -f ../rocksdb/include/) LIBPATH=$(readlink -f ../rocksdb/) LIBS=rocksdb CC=/opt/mongodbtoolchain/bin/gcc CXX=/opt/mongodbtoolchain/bin/g++ --variant-dir=release
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure --storageEngine=rocksdb
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1404-build
+#   # - name: lint
+#   - name: aggregation
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: dbtest
+#   # - name: disk
+#   # - name: durability
+#   # - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: jsCore
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_rs
+#   - name: noPassthrough
+#   - name: noPassthroughWithMongod
+#   - name: bulk_gle_passthrough
+#   - name: parallel
+#   - name: parallel_compatibility
+#   - name: concurrency
+#   - name: replicasets
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow2
+#   - name: sharding_jscore_passthrough
 
-###########################################
-#     Experimental buildvariants          #
-###########################################
+# ###########################################
+# #     Experimental buildvariants          #
+# ###########################################
 
-- name: ubuntu1404-debug-asan
-  display_name: z ASAN SSL Ubuntu 1404 64-bit DEBUG
-  run_on:
-  - ubuntu1404-build
-  stepback: false
-  batchtime: 1440 # 3.5 days
-  expansions:
-    tooltags: "-tags 'ssl'"
-    asan_symbolizer: ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4
-    enable_lsan: LSAN_OPTIONS="suppressions=etc/lsan.suppressions" ASAN_OPTIONS=detect_leaks=1
-    compile_flags: CC=/usr/bin/clang CXX=/usr/bin/clang++ --dbg=on --opt=on --allocator=system --sanitize=address --ssl -j$(grep -c ^processor /proc/cpuinfo) --nostrip --variant-dir=build
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: -j1 --continueOnFailure  # Avoid starting too many mongod's under ASAN build.
-  tasks:
-  - name: compile
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
+# - name: ubuntu1404-debug-asan
+#   display_name: z ASAN SSL Ubuntu 1404 64-bit DEBUG
+#   run_on:
+#   - ubuntu1404-build
+#   stepback: false
+#   batchtime: 1440 # 3.5 days
+#   expansions:
+#     tooltags: "-tags 'ssl'"
+#     asan_symbolizer: ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4
+#     enable_lsan: LSAN_OPTIONS="suppressions=etc/lsan.suppressions" ASAN_OPTIONS=detect_leaks=1
+#     compile_flags: CC=/usr/bin/clang CXX=/usr/bin/clang++ --dbg=on --opt=on --allocator=system --sanitize=address --ssl -j$(grep -c ^processor /proc/cpuinfo) --nostrip --variant-dir=build
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: -j1 --continueOnFailure  # Avoid starting too many mongod's under ASAN build.
+#   tasks:
+#   - name: compile
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
 
-- name: ubuntu1410-fast-clang
-  display_name: z Clang/libc++ Ubuntu 1410 64-bit SSL
-  run_on:
-  - ubuntu1410-test
-  stepback: false
-  expansions:
-    tooltags: "-tags 'ssl'"
-    compile_flags: CC=/usr/bin/clang CXX=/usr/bin/clang++ --libc++ --ssl -j$(grep -c ^processor /proc/cpuinfo) --variant-dir=build --distmod=ubuntu1410-clang
-    num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
-    test_flags: --continueOnFailure
-    push_path: linux
-    push_bucket: downloads.mongodb.org
-    push_name: linux
-    push_arch: x86_64-ubuntu1410-clang
-  tasks:
-  - name: compile
-    distros:
-    - ubuntu1410-build
-  - name: aggregation
-  - name: aggregation_WT
-  - name: aggregation_auth
-  - name: auth
-  - name: auth_WT
-  - name: dbtest
-  - name: dbtest_WT
-  - name: disk
-  - name: durability
-  - name: dur_jscore_passthrough
-  - name: failpoints
-  - name: failpoints_auth
-  - name: gle_auth
-  - name: gle_auth_WT
-  - name: gle_auth_write_cmd
-  - name: gle_auth_write_cmd_WT
-  - name: gle_auth_basics_passthrough
-  - name: gle_auth_basics_passthrough_WT
-  - name: gle_auth_basics_passthrough_write_cmd
-  - name: gle_auth_basics_passthrough_write_cmd_WT
-  - name: sharding_gle_auth_basics_passthrough
-  - name: sharding_gle_auth_basics_passthrough_WT
-  - name: sharding_gle_auth_basics_passthrough_write_cmd
-  - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
-  - name: jsCore
-  - name: jsCore_WT
-  - name: jsCore_auth
-  - name: jsCore_compatibility
-  - name: jsCore_compatibility_WT
-  - name: jsCore_small_oplog
-  - name: jsCore_small_oplog_WT
-  - name: jsCore_small_oplog_rs
-  - name: jsCore_small_oplog_rs_WT
-  - name: mmap
-  - name: mongosTest
-  - name: multiversion
-  - name: noPassthrough
-  - name: noPassthrough_WT
-  - name: noPassthroughWithMongod
-  - name: noPassthroughWithMongod_WT
-  - name: bulk_gle_passthrough
-  - name: bulk_gle_passthrough_WT
-  - name: parallel
-  - name: parallel_WT
-  - name: parallel_compatibility
-  - name: parallel_compatibility_WT
-  - name: concurrency
-  - name: concurrency_WT
-  - name: replicasets
-  - name: replicasets_WT
-  - name: replicasets_auth
-  - name: replication
-  - name: replication_WT
-  - name: replication_auth
-  - name: sharding
-  - name: sharding_WT
-  - name: sharding_auth
-  - name: slow1
-  - name: slow1_WT
-  - name: slow2
-  - name: slow2_WT
-  - name: sharding_jscore_passthrough
-  - name: sharding_jscore_passthrough_WT
-  - name: ssl
-  - name: sslSpecial
-  - name: tool
-  - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+# - name: ubuntu1410-fast-clang
+#   display_name: z Clang/libc++ Ubuntu 1410 64-bit SSL
+#   run_on:
+#   - ubuntu1410-test
+#   stepback: false
+#   expansions:
+#     tooltags: "-tags 'ssl'"
+#     compile_flags: CC=/usr/bin/clang CXX=/usr/bin/clang++ --libc++ --ssl -j$(grep -c ^processor /proc/cpuinfo) --variant-dir=build --distmod=ubuntu1410-clang
+#     num_jobs_unittests: $(grep -c ^processor /proc/cpuinfo)
+#     test_flags: --continueOnFailure
+#     push_path: linux
+#     push_bucket: downloads.mongodb.org
+#     push_name: linux
+#     push_arch: x86_64-ubuntu1410-clang
+#   tasks:
+#   - name: compile
+#     distros:
+#     - ubuntu1410-build
+#   - name: aggregation
+#   - name: aggregation_WT
+#   - name: aggregation_auth
+#   - name: auth
+#   - name: auth_WT
+#   - name: dbtest
+#   - name: dbtest_WT
+#   - name: disk
+#   - name: durability
+#   - name: dur_jscore_passthrough
+#   - name: failpoints
+#   - name: failpoints_auth
+#   - name: gle_auth
+#   - name: gle_auth_WT
+#   - name: gle_auth_write_cmd
+#   - name: gle_auth_write_cmd_WT
+#   - name: gle_auth_basics_passthrough
+#   - name: gle_auth_basics_passthrough_WT
+#   - name: gle_auth_basics_passthrough_write_cmd
+#   - name: gle_auth_basics_passthrough_write_cmd_WT
+#   - name: sharding_gle_auth_basics_passthrough
+#   - name: sharding_gle_auth_basics_passthrough_WT
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd
+#   - name: sharding_gle_auth_basics_passthrough_write_cmd_WT
+#   - name: jsCore
+#   - name: jsCore_WT
+#   - name: jsCore_auth
+#   - name: jsCore_compatibility
+#   - name: jsCore_compatibility_WT
+#   - name: jsCore_small_oplog
+#   - name: jsCore_small_oplog_WT
+#   - name: jsCore_small_oplog_rs
+#   - name: jsCore_small_oplog_rs_WT
+#   - name: mmap
+#   - name: mongosTest
+#   - name: multiversion
+#   - name: noPassthrough
+#   - name: noPassthrough_WT
+#   - name: noPassthroughWithMongod
+#   - name: noPassthroughWithMongod_WT
+#   - name: bulk_gle_passthrough
+#   - name: bulk_gle_passthrough_WT
+#   - name: parallel
+#   - name: parallel_WT
+#   - name: parallel_compatibility
+#   - name: parallel_compatibility_WT
+#   - name: concurrency
+#   - name: concurrency_WT
+#   - name: replicasets
+#   - name: replicasets_WT
+#   - name: replicasets_auth
+#   - name: replication
+#   - name: replication_WT
+#   - name: replication_auth
+#   - name: sharding
+#   - name: sharding_WT
+#   - name: sharding_auth
+#   - name: slow1
+#   - name: slow1_WT
+#   - name: slow2
+#   - name: slow2_WT
+#   - name: sharding_jscore_passthrough
+#   - name: sharding_jscore_passthrough_WT
+#   - name: ssl
+#   - name: sslSpecial
+#   - name: tool
+#   - name: tool_WT
+#   - name: push
+#     distros:
+#     - rhel55-test
