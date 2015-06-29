@@ -412,6 +412,7 @@ namespace {
         bool hasOutOfMemoryException() { return _real->hasOutOfMemoryException(); }
         void rename(const char* from, const char* to) { _real->rename(from, to); }
         double getNumber(const char* field) { return _real->getNumber(field); }
+        Decimal128 getNumberDecimal(const char* field) { return _real->getNumberDecimal(field); }
         string getString(const char* field) { return _real->getString(field); }
         bool getBoolean(const char* field) { return _real->getBoolean(field); }
         BSONObj getObject(const char* field) { return _real->getObject(field); }
