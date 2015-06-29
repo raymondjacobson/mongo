@@ -36,6 +36,7 @@
 #include <utility>
 
 #include "mongo/platform/endian.h"
+#include "mongo/util/assert_util.h"
 
 namespace mongo {
 // Determine system's endian ordering in order to construct decimal
@@ -70,33 +71,20 @@ BID_UINT128 decimal128ToLibraryType(Decimal128::Decimal128Value value) {
 BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
                                       Decimal128::RoundingMode roundMode,
                                       int base10Exp,
-                                      uint32_t idec_signaling_flags) {
+                                      uint32_t& idec_signaling_flags) {
     BID_UINT128 quantizerReference;
 
     // The quantizer starts at 1E-15
     quantizerReference.w[HIGH_64] = 0x3022000000000000;
     quantizerReference.w[LOW_64] = 0x0000000000000001;
 
-    BID_UINT128 base10ExpInBID;
-    // Start with the representation of 1
-    base10ExpInBID.w[HIGH_64] = 0x3040000000000000;
-    base10ExpInBID.w[LOW_64] = 0x0000000000000001;
+    // Scale the quantizer by the base 10 exponent. This is necessary to keep
+    // the scale of the quantizer reference correct. For example, the decimal value 101
+    // needs a different quantizer (1E-12) than the decimal value 1001 (1E-11) to yield
+    // a 15 digit decimal precision.
+    quantizerReference =
+        bid128_scalbn(quantizerReference, base10Exp, roundMode, &idec_signaling_flags);
 
-    // Scale the exponent by the base 10 exponent. This is necessary to keep
-    // The precision of the quantizer reference correct. Different cohorts
-    // behave differently as a quantizer reference.
-    base10ExpInBID =
-        bid128_scalbn(base10ExpInBID, abs(base10Exp), roundMode, &idec_signaling_flags);
-
-    // Multiply the quantizer by the base 10 exponent for the positive case
-    // and divide for the negative one
-    if (base10Exp > 0) {
-        quantizerReference =
-            bid128_mul(quantizerReference, base10ExpInBID, roundMode, &idec_signaling_flags);
-    } else {
-        quantizerReference =
-            bid128_div(quantizerReference, base10ExpInBID, roundMode, &idec_signaling_flags);
-    }
     value = bid128_quantize(value, quantizerReference, roundMode, &idec_signaling_flags);
     return value;
 }
@@ -140,32 +128,61 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     int exp;
     // Get the exponent from the incoming double
     frexp(doubleValue, &exp);
-    // Convert base 2 to base 10, ex: 2^7=128, 10^(7*.3)=125.89...
-    // If, by chance, 10^(n*.3) < 2^n, we're at most 1 off, so add 1
-    int base10Exp = (exp * 3) / 10;
+    /**
+     * Convert a base 2 exponent to base 10 using integer arithmetic.
+     * Given a double D, we would like to find N such that 10^N > D and 10^(N-1) < D
+     * We will use N = exp(D) * 3 / 10 + 1 as a starting guess.
+     * This formula is derived from the fact that 10^(exp(D)*log10(2)) = 2^exp(D).
+     * We add one because in the majority of cases exp(D) * 3 / 10 is an
+     * underestimate since 3/10 < log10(2).
+     *
+     * Take as an example: 2^7 = 128.
+     * Following the forumla, N = 7 * 3 / 10 + 1 = 3
+     * 10^3 = 1000 > 2^7 > 10^2, therefore our guess of N was correct.
+     *
+     * If there exists an M = N-1 such that 10^M is also greater than D, our guess was
+     * off and we will need to decrement N and re-quantize our value.
+     * Fortunately, there is never a case where there exists an M = N-2 such that 10^M > D.
+     *
+     * This conclusion is reached based on knowledge that calculation
+     * using the above formula is never inaccurate by more than a factor of 10.
+     * Total inaccuracy is caused by:
+     * - Rounding inaccuracy from using the fraction 0.3 instead of log10(2) = 0.301029...
+     * - Inaccuracy from the fact that our formula looks at comparing to 2^exp(D) instead of numbers
+     *   up to 2^exp(D+1) - 1 (which means it is off by at most a factor of 2)
+     * - Integer arithmetic inaccuracy from one division
+     * In the worst case, these total to .1029 + 2 * 2 < 10 (less than a factor of 10)
+     *
+     * Exhaustive testing of inputs verifies this conclusion.
+     */
+    int base10Exp = (exp * 3) / 10;  // Hold off adding 1 because we treat +/- differently
 
-    // Increase the base10Exp by 1 because 10 = 10^1
-    // whereas in the negative case 0.1 = 10^-2
+    // Increase the magnitude of base10Exp by an additional 1 to get positive and negative
+    // exponents to behave the same way when treated as a "scale by" 10^N.
+    // For example, 10^1 = 10*10^1 whereas in the negative exponent case 10^-1 = 10*10^-2
     if (base10Exp > 0)
-        base10Exp += 1;
+        base10Exp += 2;  // Increase by 2 here, once based on the formula above
+    else
+        base10Exp--;
 
     _value =
         Decimal128Value(quantizeTo15DecimalDigits(
                             convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags).w);
 
-    // Check if the quantization was done correctly: _value stores exaclty 15
+    // Check if the quantization was done correctly: _value stores exactly 15
     // decimal digits of precision (15 digits can fit into the low 64 bits of the decimal)
     if (_value.low64 < 100000000000000ull || _value.low64 > 999999999999999ull) {
         // If we didn't precisely get 15 digits of precision, the original base 10 exponent
-        // guess was 1 off (see comment above), so quantize once more with the exponent plus 1
+        // guess was 1 off (see comment above), so quantize once more with magnitude + 1
         if (base10Exp > 0)
-            base10Exp++;
-        else
             base10Exp--;
+        else
+            base10Exp++;
         _value = Decimal128Value(
             quantizeTo15DecimalDigits(
                 convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags).w);
     }
+    invariant(_value.low64 >= 100000000000000ull && _value.low64 <= 999999999999999ull);
 }
 
 Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
