@@ -122,8 +122,10 @@ public:
     double toDouble(RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-     * This function converts a Decimal128 to a string with syntax similar to the
-     * Decimal128 string constructor.
+     * This function converts a Decimal128 to a string with the following syntax:
+     * - If 12 >= X >= -4, the string is returned with a radix point
+     * - Otherwise, the string is returned in normalized scientific notation
+     * Where X = stored_exponent + significant_digits - 1
      */
     std::string toString();
 

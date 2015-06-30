@@ -202,11 +202,76 @@ double Decimal128::toDouble(RoundingMode roundMode) {
 
 std::string Decimal128::toString() {
     BID_UINT128 dec128 = Decimal128ToLibraryType(_value);
-    std::unique_ptr<char> c(new char());
+    std::unique_ptr<char[]> c(
+        new char[1 /* mantissa sign */ + 34 /* mantissa */ + 1 /* scientific E */ +
+                 1 /* exponent sign */ + 4 /* exponent */ + 1 /* null terminator */]);
     uint32_t idec_signaling_flags = 0;
     bid128_to_string(c.get(), dec128, &idec_signaling_flags);
+
     std::string s = c.get();
-    return s;
+    int precision = 0;
+    int exponent = 0;
+
+    // Deal with a NaN and Infinity
+    std::string::size_type ePos = s.find("E");
+    if (ePos == std::string::npos) {
+        if (s == "-NaN" || s == "+NaN")
+            return "NaN";
+        if (s[0] == '+')
+            return "Inf";
+        return s;
+    }
+
+    std::string exponentString = s.substr(ePos);
+    bool posExp = true;
+    if (exponentString[1] == '-') {
+        posExp = false;
+    }
+
+    // Get the value of the exponent, start at 2 to ignore the E and the sign
+    for (std::string::size_type i = 2; i < exponentString.size(); ++i) {
+        exponent = exponent * 10 + (exponentString[i] - '0');
+    }
+    // Get the total precision of the number
+    precision = s.size() - exponentString.size() - 1 /* mantissa sign */;
+
+    int exponentAdjusted = precision - exponent;
+    std::string res;
+
+    // First, check if the exponent is easily represented without scientific notation
+    // Otherwise, properly convert to scientific notation (normalized)
+    if (exponentAdjusted <= 12 && exponentAdjusted > 0) {
+        res = s.substr(0, exponentAdjusted + 1); // Add everything before the decimal point
+        // If the exponent was zero, we would not need anything after the decimal point
+        if (exponent != 0) {
+            res += ".";
+            res += s.substr(exponentAdjusted + 1, ePos - (exponentAdjusted + 1));
+        }
+    } else if (exponentAdjusted >= -4 && exponentAdjusted <= 0) {
+        res += s.substr(0, 1) + "0."; // Add the sign and prefix zero
+        for (int i = 0; i > exponentAdjusted; --i) {
+            res += '0';  // Add leading zeros
+        }
+        res += s.substr(1, precision);
+    } else {
+        res = s.substr(0, 2);  // Sign + 1st digit
+        if (precision > 1)
+            res += ".";
+        res += (s.substr(2, precision - 1) + "E");
+        exponentAdjusted = -exponentAdjusted + 1;
+        if (exponentAdjusted < 0)
+            exponentAdjusted *= -1;
+        if (posExp)
+            res += "+";
+        else
+            res += "-";
+        res += std::to_string(exponentAdjusted);
+    }
+    // Remove the leading '+' if the number is positive
+    if (res[0] == '+') {
+        res.erase(0, 1);
+    }
+    return res;
 }
 
 std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingMode roundMode) {
@@ -379,7 +444,7 @@ Decimal128 Decimal128::getPosMin() {
     uint64_t val[2];
     val[HIGH_64] = 0ull;
     val[LOW_64] = 1ull;
-    Decimal128 min( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 min((Decimal128Value::Decimal128Value(val)));
     return min;
 }
 
@@ -387,7 +452,7 @@ Decimal128 Decimal128::getPosMax() {
     uint64_t val[2];
     val[HIGH_64] = 6917508178773903296ull;
     val[LOW_64] = 4003012203950112767ull;
-    Decimal128 max( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 max((Decimal128Value::Decimal128Value(val)));
     return max;
 }
 
@@ -395,7 +460,7 @@ Decimal128 Decimal128::getNegMin() {
     uint64_t val[2];
     val[HIGH_64] = 16140880215628679104ull;
     val[LOW_64] = 4003012203950112767ull;
-    Decimal128 min( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 min((Decimal128Value::Decimal128Value(val)));
     return min;
 }
 
@@ -403,7 +468,7 @@ Decimal128 Decimal128::getNegMax() {
     uint64_t val[2];
     val[HIGH_64] = 9223372036854775808ull;
     val[LOW_64] = 1ull;
-    Decimal128 max( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 max((Decimal128Value::Decimal128Value(val)));
     return max;
 }
 
@@ -411,7 +476,7 @@ Decimal128 Decimal128::getPosInfinity() {
     uint64_t val[2];
     val[HIGH_64] = 8646911284551352320ull;
     val[LOW_64] = 0ull;
-    Decimal128 posInf( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 posInf((Decimal128Value::Decimal128Value(val)));
     return posInf;
 }
 
@@ -419,7 +484,7 @@ Decimal128 Decimal128::getNegInfinity() {
     uint64_t val[2];
     val[HIGH_64] = 17870283321406128128ull;
     val[LOW_64] = 0ull;
-    Decimal128 negInf( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 negInf((Decimal128Value::Decimal128Value(val)));
     return negInf;
 }
 
@@ -427,7 +492,7 @@ Decimal128 Decimal128::getPosNaN() {
     uint64_t val[2];
     val[HIGH_64] = 8935141660703064064ull;
     val[LOW_64] = 0ull;
-    Decimal128 posNaN( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 posNaN((Decimal128Value::Decimal128Value(val)));
     return posNaN;
 }
 
@@ -435,7 +500,7 @@ Decimal128 Decimal128::getNegNaN() {
     uint64_t val[2];
     val[HIGH_64] = 18158513697557839872ull;
     val[LOW_64] = 0ull;
-    Decimal128 negNaN( (Decimal128Value::Decimal128Value(val)) );
+    Decimal128 negNaN((Decimal128Value::Decimal128Value(val)));
     return negNaN;
 }
 
