@@ -1730,17 +1730,25 @@ namespace mongo {
         }
 
         v8::Local<v8::Array> names = o->GetOwnPropertyNames();
-        for (unsigned int i=0; i<names->Length(); i++) {
-            v8::Local<v8::String> name = names->Get(i)->ToString();
 
-            if (depth == 0 && name->StrictEquals(strLitToV8("_id")))
-                continue; // already handled above
-
+        // Special case the NumberDecimal since it cannot be stored (and therefore compared)
+        // numerically in Javascript as raw BSON Elements. Instead, build an object and compare.
+        if (NumberDecimalFT()->HasInstance(o)) {
+            v8::Local<v8::String> name = names->Get(0)->ToString();
             V8String sname(name);
-            v8::Local<v8::Value> value = o->Get(name);
-            v8ToMongoElement(b, sname, value, depth + 1, &originalBSON);
-        }
+            v8ToMongoObject(b, sname, o, depth, &originalBSON);
+        } else {
+            for (unsigned int i=0; i<names->Length(); i++) {
+                v8::Local<v8::String> name = names->Get(i)->ToString();
 
+                if (depth == 0 && name->StrictEquals(strLitToV8("_id")))
+                    continue; // already handled above
+
+                V8String sname(name);
+                v8::Local<v8::Value> value = o->Get(name);
+                v8ToMongoElement(b, sname, value, depth + 1, &originalBSON);
+            }
+        }
         const int sizeWithEOO = b.len() + 1/*EOO*/ - 4/*BSONObj::Holder ref count*/;
         uassert(17260, str::stream() << "Converting from JavaScript to BSON failed: "
                                      << "Object size " << sizeWithEOO << " exceeds limit of "
