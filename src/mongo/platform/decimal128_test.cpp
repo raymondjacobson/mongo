@@ -31,6 +31,7 @@
 #include <string>
 #include <utility>
 #include <iostream>
+#include <math.h>
 
 #include "mongo/platform/endian.h"
 #include "mongo/unittest/unittest.h"
@@ -173,6 +174,13 @@ TEST_F(Decimal128Test, TestDoubleConstructorQuant7) {
     double dbl = 0.1129857 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1.12985700000000E-19");
+    ASSERT_TRUE(d.isEqual(e));
+}
+
+TEST_F(Decimal128Test, TestDoubleConstructorQuantFailPoorLog10Of2Estimate) {
+    double dbl = pow(2, 1000);
+    Decimal128 d(dbl);
+    Decimal128 e("1.07150860718627E301");
     ASSERT_TRUE(d.isEqual(e));
 }
 
