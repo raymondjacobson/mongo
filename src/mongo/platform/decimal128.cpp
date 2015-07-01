@@ -29,7 +29,7 @@
 
 #include "mongo/platform/decimal128.h"
 
-#include <math.h>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <cstdlib>
@@ -141,7 +141,8 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
      * This formula is derived from the fact that 10^(E*log10(2)) = 2^E.
      * We add one because in the majority of cases E * 301 / 1000 is an
      * underestimate since 301/1000 < log10(2), the integer division truncates, and, typically,
-     * the bits of the mantissa of the considered double D are not filled with zeros after the MSB.
+     * the bits of the mantissa of the considered double D are not filled with zeros after the
+     * most significant bit.
      *
      * Take as an example: 2^7 = 128.
      * Following the forumla, N = 7 * 301 / 1000 + 1 = 3
@@ -162,17 +163,15 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
      *                      = 308 * ((0.301 - log10(2)) / log10(2)) = -0.03069
      *
      * - Inaccuracy from the fact that our formula looks at comparing to 2^E instead of numbers
-     *   up to 2^exp(D+1) - 1 (which means the guess is off by at most a factor of 2)
+     *   up to but not including 2^(E+1) (which means the guess is off by at most a factor of 2)
      *   Max Absolute Error = -log10(2) = -0.30103
      *
      * - Integer arithmetic inaccuracy from one division (301/1000)
-     *   Up until the integer division truncation, our total error is -0.33072, which means
-     *   after truncation our total error can be no more than -1. It is either 0 or -1.
+     *   Up until the integer division truncation, our total error is between -0.33072 and 0,
+     *   which means after truncation our total error can be no more than -1. It is either 0 or -1.
      *
      * In the worst case, the total error is -1. In the case of such error, we must
      * subtract off 1 from our guess to account for the error and retry the quantizing operation.
-     *
-     * Exhaustive testing of inputs verifies this conclusion.
      */
 
     // Hold off adding 1 because we treat +/- slightly differently

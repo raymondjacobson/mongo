@@ -30,9 +30,10 @@
 #include <array>
 #include <string>
 #include <utility>
-#include <math.h>
+#include <cmath>
 
 #include "mongo/platform/endian.h"
+#include "mongo/stdx/memory.h"
 #include "mongo/unittest/unittest.h"
 
 namespace mongo {
@@ -177,7 +178,7 @@ TEST_F(Decimal128Test, TestDoubleConstructorQuant7) {
 }
 
 TEST_F(Decimal128Test, TestDoubleConstructorQuantFailPoorLog10Of2Estimate) {
-    double dbl = pow(2, 1000);
+    double dbl = exp2(1000);
     Decimal128 d(dbl);
     Decimal128 e("1.07150860718627E301");
     ASSERT_TRUE(d.isEqual(e));
@@ -274,7 +275,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Even) {
     int32_t out[6] = {-3, -2, -2, 2, 2, 3};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toInt(), out[testNo]);
     }
 }
@@ -285,7 +286,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Neg) {
     int32_t out[6] = {-3, -3, -3, 2, 2, 2};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
@@ -296,7 +297,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Pos) {
     int32_t out[6] = {-2, -2, -2, 3, 3, 3};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
@@ -307,7 +308,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Zero) {
     int32_t out[6] = {-2, -2, -2, 2, 2, 2};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
@@ -318,7 +319,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Away) {
     int32_t out[6] = {-3, -3, -2, 2, 3, 3};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toInt(roundMode), out[testNo]);
     }
 }
@@ -333,7 +334,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Even) {
     int64_t out[6] = {-4294967297, -4294967296, -4294967296, 4294967296, 4294967296, 4294967297};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toLong(), out[testNo]);
     }
 }
@@ -349,7 +350,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Neg) {
     int64_t out[6] = {-4294967297, -4294967297, -4294967297, 4294967296, 4294967296, 4294967296};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
@@ -365,7 +366,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Pos) {
     int64_t out[6] = {-4294967296, -4294967296, -4294967296, 4294967297, 4294967297, 4294967297};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
@@ -381,7 +382,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Zero) {
     int64_t out[6] = {-4294967296, -4294967296, -4294967296, 4294967296, 4294967296, 4294967296};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
@@ -397,7 +398,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Away) {
     int64_t out[6] = {-4294967297, -4294967297, -4294967296, 4294967296, 4294967297, 4294967297};
     std::unique_ptr<Decimal128> decPtr;
     for (int testNo = 0; testNo < 6; ++testNo) {
-        decPtr.reset(new Decimal128(in[testNo]));
+        decPtr = stdx::make_unique<Decimal128>(Decimal128(in[testNo]));
         ASSERT_EQUALS(decPtr->toLong(roundMode), out[testNo]);
     }
 }
