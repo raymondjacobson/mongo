@@ -82,9 +82,7 @@ protected:
         valDecimal = Decimal128(1);
 
         doc = BSON(aBool(valBool) << anArray(valArray) << anObj(valObj) << aDate(valDate)
-                                  << aString(valString)
-                                  << anOID(valOID)
-                                  << aLong(valLong)
+                                  << aString(valString) << anOID(valOID) << aLong(valLong)
                                   << aDecimal(valDecimal));
     }
 
@@ -340,13 +338,9 @@ TEST(ComplexExtraction, GetObjectMap) {
 
     BSONObjBuilder bob;
     bob << mapField() << BSON("a" << BSON("a"
-                                          << "a")
-                                  << "b"
-                                  << BSON("b"
-                                          << "b")
-                                  << "c"
-                                  << BSON("c"
-                                          << "c"));
+                                          << "a") << "b" << BSON("b"
+                                                                 << "b") << "c" << BSON("c"
+                                                                                        << "c"));
     BSONObj obj = bob.obj();
 
     map<string, BSONObj> parsedMap;
@@ -371,9 +365,7 @@ TEST(ComplexExtraction, GetBadMap) {
     BSONObjBuilder bob;
     bob << mapField() << BSON("a"
                               << "a"
-                              << "b"
-                              << 123
-                              << "c"
+                              << "b" << 123 << "c"
                               << "c");
     BSONObj obj = bob.obj();
 
@@ -452,9 +444,7 @@ TEST(ComplexExtraction, GetBadNestedMap) {
 
     BSONObj nestedMapObj = BSON("a"
                                 << "a"
-                                << "b"
-                                << 123
-                                << "c"
+                                << "b" << 123 << "c"
                                 << "c");
 
     BSONObjBuilder bob;
