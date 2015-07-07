@@ -685,7 +685,8 @@ int Value::compare(const Value& rL, const Value& rR) {
                     return compareLongs(rL._storage.intValue, rR._storage.longValue);
                 case NumberDouble:
                     return compareDoubles(rL._storage.intValue, rR._storage.doubleValue);
-                case NumberDecimal: return compareDecimals(rL._storage.intValue, rR._storage.getDecimal());
+                case NumberDecimal:
+                    return compareDecimals(rL._storage.intValue, rR._storage.getDecimal());
                 default:
                     invariant(false);
             }
@@ -699,7 +700,8 @@ int Value::compare(const Value& rL, const Value& rR) {
                     return compareLongs(rL._storage.longValue, rR._storage.intValue);
                 case NumberDouble:
                     return compareLongToDouble(rL._storage.longValue, rR._storage.doubleValue);
-                case NumberDecimal: return compareDecimals(rL._storage.longValue, rR._storage.getDecimal());
+                case NumberDecimal:
+                    return compareDecimals(rL._storage.longValue, rR._storage.getDecimal());
                 default:
                     invariant(false);
             }
@@ -713,8 +715,8 @@ int Value::compare(const Value& rL, const Value& rR) {
                     return compareDoubles(rL._storage.doubleValue, rR._storage.intValue);
                 case NumberLong:
                     return compareDoubleToLong(rL._storage.doubleValue, rR._storage.longValue);
-                case NumberDecimal: return compareDecimals(rL._storage.doubleValue,
-                                                       rR._storage.getDecimal());
+                case NumberDecimal:
+                    return compareDecimals(rL._storage.doubleValue, rR._storage.getDecimal());
                 default:
                     invariant(false);
             }
