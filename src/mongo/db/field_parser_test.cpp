@@ -32,6 +32,7 @@
 
 #include "mongo/db/field_parser.h"
 #include "mongo/db/jsobj.h"
+#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/unittest/unittest.h"
 #include "mongo/util/time_support.h"
 
@@ -42,6 +43,7 @@ using mongo::BSONField;
 using mongo::BSONObj;
 using mongo::BSONObjBuilder;
 using mongo::Date_t;
+using mongo::Decimal128;
 using mongo::FieldParser;
 using mongo::OID;
 using std::string;
@@ -59,6 +61,7 @@ protected:
     string valString;
     OID valOID;
     long long valLong;
+    Decimal128 valDecimal;
 
     static BSONField<bool> aBool;
     static BSONField<BSONArray> anArray;
@@ -67,6 +70,7 @@ protected:
     static BSONField<string> aString;
     static BSONField<OID> anOID;
     static BSONField<long long> aLong;
+    static BSONField<Decimal128> aDecimal;
 
     void setUp() {
         valBool = true;
@@ -77,8 +81,15 @@ protected:
         valOID = OID::gen();
         valLong = 1LL;
 
-        doc = BSON(aBool(valBool) << anArray(valArray) << anObj(valObj) << aDate(valDate)
-                                  << aString(valString) << anOID(valOID) << aLong(valLong));
+        if (mongo::experimentalDecimalSupport) {
+            valDecimal = Decimal128(1);
+            doc = BSON(aBool(valBool) << anArray(valArray) << anObj(valObj) << aDate(valDate)
+                                      << aString(valString) << anOID(valOID) << aLong(valLong)
+                                      << aDecimal(valDecimal));
+        } else {
+            doc = BSON(aBool(valBool) << anArray(valArray) << anObj(valObj) << aDate(valDate)
+                                      << aString(valString) << anOID(valOID) << aLong(valLong));
+        }
     }
 
     void tearDown() {}
@@ -91,6 +102,7 @@ BSONField<Date_t> ExtractionFixture::aDate("aDate");
 BSONField<string> ExtractionFixture::aString("aString");
 BSONField<OID> ExtractionFixture::anOID("anOID");
 BSONField<long long> ExtractionFixture::aLong("aLong");
+BSONField<Decimal128> ExtractionFixture::aDecimal("aDecimal");
 
 TEST_F(ExtractionFixture, GetBool) {
     BSONField<bool> notThere("otherBool", true);
@@ -174,6 +186,19 @@ TEST_F(ExtractionFixture, GetLong) {
     ASSERT_FALSE(FieldParser::extract(doc, wrongType, &val));
 }
 
+TEST_F(ExtractionFixture, GetDecimal) {
+    if (mongo::experimentalDecimalSupport) {
+        BSONField<Decimal128> notThere("otherDecimal", Decimal128(0));
+        BSONField<Decimal128> wrongType(aString.name());
+        Decimal128 val;
+        ASSERT_TRUE(FieldParser::extract(doc, aDecimal, &val));
+        ASSERT_TRUE(val.isEqual(valDecimal));
+        ASSERT_TRUE(FieldParser::extract(doc, notThere, &val));
+        ASSERT_TRUE(val.isZero());
+        ASSERT_FALSE(FieldParser::extract(doc, wrongType, &val));
+    }
+}
+
 TEST_F(ExtractionFixture, IsFound) {
     bool bool_val;
     BSONField<bool> aBoolMissing("aBoolMissing");
@@ -203,6 +228,15 @@ TEST_F(ExtractionFixture, IsFound) {
     ASSERT_EQUALS(FieldParser::extract(doc, aLong, &long_long_val, NULL), FieldParser::FIELD_SET);
     ASSERT_EQUALS(FieldParser::extract(doc, aLongMissing, &long_long_val, NULL),
                   FieldParser::FIELD_NONE);
+
+    if (mongo::experimentalDecimalSupport) {
+        Decimal128 decimal_val;
+        BSONField<Decimal128> aDecimalMissing("aDecimalMissing");
+        ASSERT_EQUALS(FieldParser::extract(doc, aDecimal, &decimal_val, NULL),
+                      FieldParser::FIELD_SET);
+        ASSERT_EQUALS(FieldParser::extract(doc, aDecimalMissing, &decimal_val, NULL),
+                      FieldParser::FIELD_NONE);
+    }
 }
 
 TEST(ComplexExtraction, GetStringVector) {

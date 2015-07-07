@@ -395,6 +395,7 @@ const std::string TypeMatchExpression::kMatchesAllNumbersAlias = "number";
 
 const std::unordered_map<std::string, BSONType> TypeMatchExpression::typeAliasMap = {
     {"double", NumberDouble},
+    {"decimal", NumberDecimal},
     {"string", String},
     {"object", Object},
     {"array", Array},
