@@ -55,9 +55,8 @@ TEST(Basics, Initialization) {
 }
 
 TEST(Basics, BSONElementInitialization) {
-    mongo::BSONObj o =
-        BSON("numberInt" << 1 << "numberLong" << 1LL << "numberDouble" << 0.1 << "NumberDecimal"
-                         << Decimal128("1"));
+    mongo::BSONObj o = BSON("numberInt" << 1 << "numberLong" << 1LL << "numberDouble" << 0.1
+                                        << "NumberDecimal" << Decimal128("1"));
 
     const SafeNum numInt(o.getField("numberInt"));
     ASSERT_EQUALS(numInt.type(), mongo::NumberInt);
