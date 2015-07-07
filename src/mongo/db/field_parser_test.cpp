@@ -42,6 +42,7 @@ using mongo::BSONField;
 using mongo::BSONObj;
 using mongo::BSONObjBuilder;
 using mongo::Date_t;
+using mongo::Decimal128;
 using mongo::FieldParser;
 using mongo::OID;
 using std::string;
@@ -59,6 +60,7 @@ protected:
     string valString;
     OID valOID;
     long long valLong;
+    Decimal128 valDecimal;
 
     static BSONField<bool> aBool;
     static BSONField<BSONArray> anArray;
@@ -67,6 +69,7 @@ protected:
     static BSONField<string> aString;
     static BSONField<OID> anOID;
     static BSONField<long long> aLong;
+    static BSONField<Decimal128> aDecimal;
 
     void setUp() {
         valBool = true;
@@ -76,9 +79,13 @@ protected:
         valString = "a string";
         valOID = OID::gen();
         valLong = 1LL;
+        valDecimal = Decimal128(1);
 
         doc = BSON(aBool(valBool) << anArray(valArray) << anObj(valObj) << aDate(valDate)
-                                  << aString(valString) << anOID(valOID) << aLong(valLong));
+                                  << aString(valString)
+                                  << anOID(valOID)
+                                  << aLong(valLong)
+                                  << aDecimal(valDecimal));
     }
 
     void tearDown() {}
@@ -91,6 +98,7 @@ BSONField<Date_t> ExtractionFixture::aDate("aDate");
 BSONField<string> ExtractionFixture::aString("aString");
 BSONField<OID> ExtractionFixture::anOID("anOID");
 BSONField<long long> ExtractionFixture::aLong("aLong");
+BSONField<Decimal128> ExtractionFixture::aDecimal("aDecimal");
 
 TEST_F(ExtractionFixture, GetBool) {
     BSONField<bool> notThere("otherBool", true);
@@ -174,6 +182,17 @@ TEST_F(ExtractionFixture, GetLong) {
     ASSERT_FALSE(FieldParser::extract(doc, wrongType, &val));
 }
 
+TEST_F(ExtractionFixture, GetDecimal) {
+    BSONField<Decimal128> notThere("otherDecimal", Decimal128(0));
+    BSONField<Decimal128> wrongType(aString.name());
+    Decimal128 val;
+    ASSERT_TRUE(FieldParser::extract(doc, aDecimal, &val));
+    ASSERT_TRUE(val.isEqual(valDecimal));
+    ASSERT_TRUE(FieldParser::extract(doc, notThere, &val));
+    ASSERT_TRUE(val.isZero());
+    ASSERT_FALSE(FieldParser::extract(doc, wrongType, &val));
+}
+
 TEST_F(ExtractionFixture, IsFound) {
     bool bool_val;
     BSONField<bool> aBoolMissing("aBoolMissing");
@@ -202,6 +221,12 @@ TEST_F(ExtractionFixture, IsFound) {
     BSONField<long long> aLongMissing("aLongMissing");
     ASSERT_EQUALS(FieldParser::extract(doc, aLong, &long_long_val, NULL), FieldParser::FIELD_SET);
     ASSERT_EQUALS(FieldParser::extract(doc, aLongMissing, &long_long_val, NULL),
+                  FieldParser::FIELD_NONE);
+
+    Decimal128 decimal_val;
+    BSONField<Decimal128> aDecimalMissing("aDecimalMissing");
+    ASSERT_EQUALS(FieldParser::extract(doc, aDecimal, &decimal_val, NULL), FieldParser::FIELD_SET);
+    ASSERT_EQUALS(FieldParser::extract(doc, aDecimalMissing, &decimal_val, NULL),
                   FieldParser::FIELD_NONE);
 }
 
@@ -315,9 +340,13 @@ TEST(ComplexExtraction, GetObjectMap) {
 
     BSONObjBuilder bob;
     bob << mapField() << BSON("a" << BSON("a"
-                                          << "a") << "b" << BSON("b"
-                                                                 << "b") << "c" << BSON("c"
-                                                                                        << "c"));
+                                          << "a")
+                                  << "b"
+                                  << BSON("b"
+                                          << "b")
+                                  << "c"
+                                  << BSON("c"
+                                          << "c"));
     BSONObj obj = bob.obj();
 
     map<string, BSONObj> parsedMap;
@@ -342,7 +371,9 @@ TEST(ComplexExtraction, GetBadMap) {
     BSONObjBuilder bob;
     bob << mapField() << BSON("a"
                               << "a"
-                              << "b" << 123 << "c"
+                              << "b"
+                              << 123
+                              << "c"
                               << "c");
     BSONObj obj = bob.obj();
 
@@ -421,7 +452,9 @@ TEST(ComplexExtraction, GetBadNestedMap) {
 
     BSONObj nestedMapObj = BSON("a"
                                 << "a"
-                                << "b" << 123 << "c"
+                                << "b"
+                                << 123
+                                << "c"
                                 << "c");
 
     BSONObjBuilder bob;

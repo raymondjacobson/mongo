@@ -165,6 +165,16 @@ public:
                               double* out,
                               std::string* errMsg = NULL);
 
+    static FieldState extract(BSONElement elem,
+                              const BSONField<Decimal128>& field,
+                              Decimal128* out,
+                              std::string* errMsg = NULL);
+
+    static FieldState extract(BSONObj doc,
+                              const BSONField<Decimal128>& field,
+                              Decimal128* out,
+                              std::string* errMsg = NULL);
+
     /**
      * The following extractNumber methods do implicit conversion between any numeric type and
      * the BSONField type.  This can be useful when an exact numeric type is not needed, for
@@ -198,6 +208,16 @@ public:
     static FieldState extractNumber(BSONElement elem,
                                     const BSONField<double>& field,
                                     double* out,
+                                    std::string* errMsg = NULL);
+
+    static FieldState extractNumber(BSONObj doc,
+                                    const BSONField<Decimal128>& field,
+                                    Decimal128* out,
+                                    std::string* errMsg = NULL);
+
+    static FieldState extractNumber(BSONElement elem,
+                                    const BSONField<Decimal128>& field,
+                                    Decimal128* out,
                                     std::string* errMsg = NULL);
 
     /**
