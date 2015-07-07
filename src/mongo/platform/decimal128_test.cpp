@@ -650,6 +650,13 @@ TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
     ASSERT_FALSE(result);
 }
 
+TEST_F(Decimal128Test, TestDecimal128EqualCase4) {
+    Decimal128 d1("inf");
+    Decimal128 d2("inf");
+    bool result = d1.isEqual(d2);
+    ASSERT_TRUE(result);
+}
+
 TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.06E20");
