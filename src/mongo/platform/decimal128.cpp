@@ -93,7 +93,7 @@ BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
 }
 
 Decimal128::Decimal128Value::Decimal128Value(uint64_t low, uint64_t high)
-    : high64(high), low64(low) {}
+    : low64(low), high64(high) {}
 
 Decimal128::Decimal128(int32_t int32Value)
     : _value(libraryTypeToDecimal128Value(bid128_from_int32(int32Value))) {}
