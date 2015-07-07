@@ -743,6 +743,11 @@ long long V8Scope::getNumberLongLong(const char* field) {
     return get(field)->ToInteger()->Value();
 }
 
+Decimal128 V8Scope::getNumberDecimal(const char* field) {
+    V8_SIMPLE_HEADER
+    return Decimal128(toSTLString(get(field)->ToString()));
+}
+
 string V8Scope::getString(const char* field) {
     V8_SIMPLE_HEADER
     return toSTLString(get(field));
@@ -778,6 +783,13 @@ v8::Handle<v8::FunctionTemplate> getNumberIntFunctionTemplate(V8Scope* scope) {
     scope->injectV8Method("toNumber", numberIntToNumber, proto);
     scope->injectV8Method("toString", numberIntToString, proto);
     return numberInt;
+}
+
+v8::Handle<v8::FunctionTemplate> getNumberDecimalFunctionTemplate(V8Scope* scope) {
+    v8::Handle<v8::FunctionTemplate> numberDecimal = scope->createV8Function(numberDecimalInit);
+    v8::Handle<v8::ObjectTemplate> proto = numberDecimal->PrototypeTemplate();
+    scope->injectV8Method("toString", numberDecimalToString, proto);
+    return numberDecimal;
 }
 
 v8::Handle<v8::FunctionTemplate> getBinDataFunctionTemplate(V8Scope* scope) {
@@ -1300,6 +1312,7 @@ void V8Scope::installBSONTypes() {
     _BinDataFT = FTPtr::New(getBinDataFunctionTemplate(this));
     _NumberLongFT = FTPtr::New(getNumberLongFunctionTemplate(this));
     _NumberIntFT = FTPtr::New(getNumberIntFunctionTemplate(this));
+    _NumberDecimalFT = FTPtr::New(getNumberDecimalFunctionTemplate(this));
     _TimestampFT = FTPtr::New(getTimestampFunctionTemplate(this));
     _MinKeyFT = FTPtr::New(getMinKeyFunctionTemplate(this));
     _MaxKeyFT = FTPtr::New(getMaxKeyFunctionTemplate(this));
@@ -1307,6 +1320,7 @@ void V8Scope::installBSONTypes() {
     injectV8Function("BinData", BinDataFT(), _global);
     injectV8Function("NumberLong", NumberLongFT(), _global);
     injectV8Function("NumberInt", NumberIntFT(), _global);
+    injectV8Function("NumberDecimal", NumberDecimalFT(), _global);
     injectV8Function("Timestamp", TimestampFT(), _global);
 
     // These are instances created from the functions, not the functions themselves
@@ -1405,6 +1419,7 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
     v8::Local<v8::Object> instance;  // instance of v8 type
     uint64_t nativeUnsignedLong;     // native representation of NumberLong
 
+
     switch (elem.type()) {
         case mongo::Code:
             return newFunction(elem.valueStringData());
@@ -1501,6 +1516,17 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
                     v8::Integer::New((unsigned long)(nativeUnsignedLong & 0x00000000ffffffff));
                 return NumberLongFT()->GetFunction()->NewInstance(3, argv);
             }
+        case mongo::NumberDecimal: {
+            nativeDecimal = elem.numberDecimal();
+            // Store number decimals as strings
+            // Note: This prevents shell arithmetic, which is performed for number longs
+            // by converting them to doubles, which is imprecise. Until there is a better
+            // method to handle non-double shell arithmetic, decimals will remain
+            // as a non-numeric js type.
+            std::string decString = nativeDecimal.toString();
+            argv[0] = v8::String::New(decString.c_str());
+            return NumberDecimalFT()->GetFunction()->NewInstance(1, argv);
+        }
         case mongo::MinKey:
             return MinKeyFT()->GetFunction()->NewInstance();
         case mongo::MaxKey:
@@ -1598,6 +1624,8 @@ void V8Scope::v8ToMongoObject(BSONObjBuilder& b,
         b.append(elementName, numberLongVal(this, obj));
     } else if (NumberIntFT()->HasInstance(value)) {
         b.append(elementName, numberIntVal(this, obj));
+    } else if (NumberDecimalFT()->HasInstance(value)) {
+        b.append(elementName, numberDecimalVal(this, obj));
     } else if (DBPointerFT()->HasInstance(value)) {
         v8ToMongoDBRef(b, elementName, obj);
     } else if (BinDataFT()->HasInstance(value)) {
