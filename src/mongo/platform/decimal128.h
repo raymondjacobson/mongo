@@ -127,7 +127,7 @@ public:
      * This function converts a Decimal128 to a string with syntax similar to the
      * Decimal128 string constructor.
      */
-    std::string toString();
+    std::string toString() const;
 
     /**
      * This set of functions converts a Decimal128 to a certain numerical type and
