@@ -1472,8 +1472,7 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
             v8::Handle<v8::Value> ret = _jsRegExpConstructor->NewInstance(2, args);
             uassert(16863,
                     str::stream() << "Error converting " << elem.toString(false) << " in field "
-                                  << elem.fieldName()
-                                  << " to a JS RegExp object: "
+                                  << elem.fieldName() << " to a JS RegExp object: "
                                   << toSTLString(tryCatch.Exception()),
                     !tryCatch.HasCaught());
 
@@ -1497,8 +1496,7 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
             v8::Handle<v8::Value> ret = TimestampFT()->GetFunction()->NewInstance(2, argv);
             uassert(17355,
                     str::stream() << "Error converting " << elem.toString(false) << " in field "
-                                  << elem.fieldName()
-                                  << " to a JS Timestamp object: "
+                                  << elem.fieldName() << " to a JS Timestamp object: "
                                   << toSTLString(tryCatch.Exception()),
                     !tryCatch.HasCaught());
 
@@ -1661,8 +1659,7 @@ void V8Scope::v8ToMongoElement(BSONObjBuilder& b,
     // Null char should be at the end, not in the string
     uassert(16985,
             str::stream() << "JavaScript property (name) contains a null char "
-                          << "which is not allowed in BSON. "
-                          << originalParent->jsonString(),
+                          << "which is not allowed in BSON. " << originalParent->jsonString(),
             (string::npos == sname.find('\0')));
 
     if (value->IsString()) {
@@ -1762,11 +1759,8 @@ BSONObj V8Scope::v8ToMongo(v8::Handle<v8::Object> o, int depth) {
     const int sizeWithEOO = b.len() + 1 /*EOO*/ - 4 /*BSONObj::Holder ref count*/;
     uassert(17260,
             str::stream() << "Converting from JavaScript to BSON failed: "
-                          << "Object size "
-                          << sizeWithEOO
-                          << " exceeds limit of "
-                          << BSONObjMaxInternalSize
-                          << " bytes.",
+                          << "Object size " << sizeWithEOO << " exceeds limit of "
+                          << BSONObjMaxInternalSize << " bytes.",
             sizeWithEOO <= BSONObjMaxInternalSize);
 
     return b.obj();  // Would give an uglier error than above for oversized objects.

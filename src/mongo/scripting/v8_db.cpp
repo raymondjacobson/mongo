@@ -378,13 +378,10 @@ v8::Handle<v8::Value> mongoAuth(V8Scope* scope, const v8::Arguments& args) {
             params = scope->v8ToMongo(args[0]->ToObject());
             break;
         case 3:
-            params =
-                BSON(saslCommandMechanismFieldName << "MONGODB-CR" << saslCommandUserDBFieldName
-                                                   << toSTLString(args[0])
-                                                   << saslCommandUserFieldName
-                                                   << toSTLString(args[1])
-                                                   << saslCommandPasswordFieldName
-                                                   << toSTLString(args[2]));
+            params = BSON(saslCommandMechanismFieldName
+                          << "MONGODB-CR" << saslCommandUserDBFieldName << toSTLString(args[0])
+                          << saslCommandUserFieldName << toSTLString(args[1])
+                          << saslCommandPasswordFieldName << toSTLString(args[2]));
             break;
         default:
             return v8AssertionException("mongoAuth takes 1 object or 3 string arguments");
@@ -429,8 +426,7 @@ v8::Handle<v8::Value> mongoCopyDatabaseWithSCRAM(V8Scope* scope, const v8::Argum
 
     BSONObj saslFirstCommandPrefix =
         BSON("copydbsaslstart" << 1 << "fromhost" << fromHost << "fromdb" << fromDb
-                               << saslCommandMechanismFieldName
-                               << "SCRAM-SHA-1");
+                               << saslCommandMechanismFieldName << "SCRAM-SHA-1");
 
     BSONObj saslFollowupCommandPrefix =
         BSON("copydb" << 1 << "fromhost" << fromHost << "fromdb" << fromDb << "todb" << toDb);
@@ -597,8 +593,7 @@ v8::Handle<v8::Value> dbInit(V8Scope* scope, const v8::Arguments& args) {
 
     argumentCheck(args.Length() == 2, "db constructor requires 2 arguments")
 
-        args.This()
-            ->ForceSet(scope->v8StringData("_mongo"), args[0]);
+        args.This()->ForceSet(scope->v8StringData("_mongo"), args[0]);
     args.This()->ForceSet(scope->v8StringData("_name"), args[1]);
 
     for (int i = 0; i < args.Length(); i++) {
@@ -894,9 +889,7 @@ v8::Handle<v8::Value> dbTimestampInit(V8Scope* scope, const v8::Arguments& args)
         int64_t largestVal = int64_t(Timestamp::max().getSecs());
         if (t > largestVal)
             return v8AssertionException(str::stream() << "The first argument must be in seconds; "
-                                                      << t
-                                                      << " is too large (max "
-                                                      << largestVal
+                                                      << t << " is too large (max " << largestVal
                                                       << ")");
         it->ForceSet(scope->v8StringData("t"), args[0]);
         it->ForceSet(scope->v8StringData("i"), args[1]);

@@ -386,8 +386,7 @@ public:
                              << "eliot"
                              << "z"
                              << "sara"
-                             << "zz"
-                             << BSONObj());
+                             << "zz" << BSONObj());
         s->setObject("blah", o, true);
 
         s->invoke("blah.y = 'e'", 0, 0);

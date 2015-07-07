@@ -59,7 +59,7 @@ class V8Scope;
 class BSONHolder;
 class JSThreadConfig;
 
-typedef v8::Handle<v8::Value> (*v8Function)(V8Scope* scope, const v8::Arguments& args);
+typedef v8::Handle<v8::Value>(*v8Function)(V8Scope* scope, const v8::Arguments& args);
 
 /**
  * The ObjTracker class keeps track of all weakly referenced v8 objects.  This is
