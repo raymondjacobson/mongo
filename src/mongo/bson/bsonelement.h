@@ -653,7 +653,8 @@ inline bool BSONElement::trueValue() const {
         case jstNULL:
         case Undefined:
             return false;
-        default:;
+        default:
+            ;
     }
     return true;
 }

@@ -35,6 +35,7 @@
 #include <string>
 #include <utility>
 
+#include "mongo/config.h"
 #include "mongo/platform/endian.h"
 #include "mongo/util/assert_util.h"
 
@@ -194,9 +195,9 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     if (base10Exp > 0)
         base10Exp += 2;
 
-    _value = Decimal128Value(
-        quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags)
-            .w);
+    _value =
+        Decimal128Value(quantizeTo15DecimalDigits(
+                            convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags).w);
 
     // Check if the quantization was done correctly: _value stores exactly 15
     // decimal digits of precision (15 digits can fit into the low 64 bits of the decimal)
@@ -207,10 +208,9 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
             base10Exp--;
         else
             base10Exp++;
-        _value =
-            Decimal128Value(quantizeTo15DecimalDigits(
-                                convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags)
-                                .w);
+        _value = Decimal128Value(
+            quantizeTo15DecimalDigits(
+                convertedDoubleValue, roundMode, base10Exp, idec_signaling_flags).w);
     }
     invariant(_value.low64 >= 100000000000000ull && _value.low64 <= 999999999999999ull);
 }
@@ -294,23 +294,23 @@ std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingMode roundMode) {
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
         case kRoundTiesToEven:
-            return std::make_pair<int32_t, bool>(
-                bid128_to_int32_xrnint(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int32_t, bool>(bid128_to_int32_xrnint(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardNegative:
-            return std::make_pair<int32_t, bool>(
-                bid128_to_int32_xfloor(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int32_t, bool>(bid128_to_int32_xfloor(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardPositive:
-            return std::make_pair<int32_t, bool>(
-                bid128_to_int32_xceil(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int32_t, bool>(bid128_to_int32_xceil(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardZero:
-            return std::make_pair<int32_t, bool>(
-                bid128_to_int32_xint(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int32_t, bool>(bid128_to_int32_xint(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTiesToAway:
-            return std::make_pair<int32_t, bool>(
-                bid128_to_int32_xrninta(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int32_t, bool>(bid128_to_int32_xrninta(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
     }
-    return std::make_pair<int32_t, bool>(bid128_to_int32_xrnint(dec128, &idec_signaling_flags),
-                                         idec_signaling_flags == 0);
+    return std::pair<int32_t, bool>(bid128_to_int32_xrnint(dec128, &idec_signaling_flags),
+                                    idec_signaling_flags == 0);
 }
 
 std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingMode roundMode) {
@@ -318,31 +318,31 @@ std::pair<int64_t, bool> Decimal128::isAndToLong(RoundingMode roundMode) {
     uint32_t idec_signaling_flags = 0;
     switch (roundMode) {
         case kRoundTiesToEven:
-            return std::make_pair<int64_t, bool>(
-                bid128_to_int64_xrnint(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int64_t, bool>(bid128_to_int64_xrnint(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardNegative:
-            return std::make_pair<int64_t, bool>(
-                bid128_to_int64_xfloor(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int64_t, bool>(bid128_to_int64_xfloor(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardPositive:
-            return std::make_pair<int64_t, bool>(
-                bid128_to_int64_xceil(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int64_t, bool>(bid128_to_int64_xceil(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTowardZero:
-            return std::make_pair<int64_t, bool>(
-                bid128_to_int64_xint(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int64_t, bool>(bid128_to_int64_xint(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
         case kRoundTiesToAway:
-            return std::make_pair<int64_t, bool>(
-                bid128_to_int64_xrninta(dec128, &idec_signaling_flags), idec_signaling_flags == 0);
+            return std::pair<int64_t, bool>(bid128_to_int64_xrninta(dec128, &idec_signaling_flags),
+                                            idec_signaling_flags == 0);
     }
     // Mimic behavior of Intel library (if round mode not valid, assume default)
-    return std::make_pair<int64_t, bool>(bid128_to_int64_xrnint(dec128, &idec_signaling_flags),
-                                         idec_signaling_flags == 0);
+    return std::pair<int64_t, bool>(bid128_to_int64_xrnint(dec128, &idec_signaling_flags),
+                                    idec_signaling_flags == 0);
 }
 
 std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
     BID_UINT128 dec128 = decimal128ToLibraryType(_value);
     uint32_t idec_signaling_flags = 0;
-    return std::make_pair<double, bool>(
-        bid128_to_binary64(dec128, roundMode, &idec_signaling_flags), idec_signaling_flags == 0);
+    return std::pair<double, bool>(bid128_to_binary64(dec128, roundMode, &idec_signaling_flags),
+                                   idec_signaling_flags == 0);
 }
 
 bool Decimal128::isZero() {

@@ -45,7 +45,7 @@ struct MaxKeyData {
     char name;
     char eoo;
 } maxkeydata;
-BSONObj maxKey((const char*) & maxkeydata);
+BSONObj maxKey((const char*)&maxkeydata);
 
 struct MinKeyData {
     MinKeyData() {
@@ -59,7 +59,7 @@ struct MinKeyData {
     char name;
     char eoo;
 } minkeydata;
-BSONObj minKey((const char*) & minkeydata);
+BSONObj minKey((const char*)&minkeydata);
 
 /*
     struct JSObj0 {
