@@ -41,6 +41,8 @@
 #include "mongo/db/json.h"
 #include "mongo/db/storage/mmap_v1/btree/key.h"
 #include "mongo/dbtests/dbtests.h"
+#include "mongo/platform/decimal128.h"
+#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/util/allocator.h"
 #include "mongo/util/embedded_builder.h"
 #include "mongo/util/log.h"
@@ -719,6 +721,11 @@ struct AppendNumber {
         ASSERT(o["c"].type() == NumberInt);
         ASSERT(o["d"].type() == NumberDouble);
         ASSERT(o["e"].type() == NumberLong);
+
+        if (experimentalDecimalSupport) { 
+            b.appendNumber("f", mongo::Decimal128("1"));
+            ASSERT(o["f"].type() == NumberDecimal);
+        }
     }
 };
 
@@ -1618,6 +1625,11 @@ public:
 
         ASSERT_EQUALS(objTypeOf(1LL), NumberLong);
         ASSERT_EQUALS(arrTypeOf(1LL), NumberLong);
+
+        if (experimentalDecimalSupport) {
+            ASSERT_EQUALS(objTypeOf(mongo::Decimal128("1")), NumberDecimal);
+            ASSERT_EQUALS(arrTypeOf(mongo::Decimal128("1")), NumberDecimal);
+        }
 
         ASSERT_EQUALS(objTypeOf(MAXKEY), MaxKey);
         ASSERT_EQUALS(arrTypeOf(MAXKEY), MaxKey);
