@@ -562,6 +562,9 @@ TEST(Element, setters) {
     t0.setValueDouble(123.45);
     ASSERT_EQUALS(mongo::NumberDouble, t0.getType());
 
+    t0.setValueDecimal(mongo::Decimal128("123.45E1234"));
+    ASSERT_EQUALS(mongo::NumberDecimal, t0.getType());
+
     t0.setValueOID(mongo::OID("47cc67093475061e3d95369d"));
     ASSERT_EQUALS(mongo::jstOID, t0.getType());
 
@@ -604,6 +607,37 @@ TEST(Element, toString) {
     docChild = docChild.rightSibling();
     ASSERT_FALSE(iter.more());
     ASSERT_FALSE(docChild.ok());
+}
+
+TEST(DecimalType, createElement) {
+    mmb::Document doc;
+
+    mmb::Element d0 = doc.makeElementDecimal("d0", mongo::Decimal128("12345"));
+    ASSERT_TRUE(mongo::Decimal128("12345").isEqual(d0.getValueDecimal()));
+}
+
+TEST(DecimalType, setElement) {
+    mmb::Document doc;
+
+    mmb::Element d0 = doc.makeElementDecimal("d0", mongo::Decimal128("128"));
+    d0.setValueDecimal(mongo::Decimal128("123456"));
+    ASSERT_TRUE(mongo::Decimal128("123456").isEqual(d0.getValueDecimal()));
+
+    d0.setValueDouble(0.1);
+    ASSERT_EQUALS(0.1, d0.getValueDouble());
+    d0.setValueDecimal(mongo::Decimal128("23"));
+    ASSERT_TRUE(mongo::Decimal128("23").isEqual(d0.getValueDecimal()));
+}
+
+TEST(DecimalType, appendElement) {
+    mmb::Document doc;
+
+    mmb::Element d0 = doc.makeElementObject("e0");
+    d0.appendDecimal("precision", mongo::Decimal128(34));
+
+    mmb::Element it = mmb::findFirstChildNamed(d0, "precision");
+    ASSERT_TRUE(it.ok());
+    ASSERT_TRUE(mongo::Decimal128(34).isEqual(it.getValueDecimal()));
 }
 
 TEST(TimestampType, createElement) {
@@ -671,6 +705,11 @@ TEST(SafeNumType, getSafeNum) {
     ASSERT_EQUALS(123.456789, t0.getValueDouble());
     num = t0.getValueSafeNum();
     ASSERT_EQUALS(num, 123.456789);
+
+    t0.setValueDecimal(mongo::Decimal128("12345678.1234"));
+    ASSERT_TRUE(mongo::Decimal128("12345678.1234").isEqual(t0.getValueDecimal()));
+    num = t0.getValueSafeNum();
+    ASSERT_EQUALS(num, mongo::Decimal128("12345678.1234"));
 }
 
 TEST(SafeNumType, setSafeNum) {
@@ -734,6 +773,7 @@ static const char jsonSample[] =
     "owner:1234567887654321,"
     "date:\"2011-05-13T14:22:46.777Z\","
     "score:123.456,"
+    "decimal:NumberDecimal(\"2\"),"
     "field1:Infinity,"
     "\"field2\":-Infinity,"
     "\"field3\":NaN,"
@@ -1313,6 +1353,9 @@ TEST(Element, IsNumeric) {
 
     elt = doc.makeElementDouble("dummy", 42.0);
     ASSERT_TRUE(elt.isNumeric());
+
+    elt = doc.makeElementDecimal("dummy", mongo::Decimal128(20));
+    ASSERT_TRUE(elt.isNumeric());
 }
 
 TEST(Element, IsIntegral) {
@@ -1331,6 +1374,9 @@ TEST(Element, IsIntegral) {
     ASSERT_TRUE(elt.isIntegral());
 
     elt = doc.makeElementDouble("dummy", 42.0);
+    ASSERT_FALSE(elt.isIntegral());
+
+    elt = doc.makeElementDecimal("dummy", mongo::Decimal128(20));
     ASSERT_FALSE(elt.isIntegral());
 }
 
@@ -2330,6 +2376,46 @@ TEST(TypeSupport, EncodingEquivalenceLong) {
     ASSERT_TRUE(identical(b.getValue(), c.getValue()));
 }
 
+TEST(TypeSupport, EncodingEquivalenceDecimal) {
+    mongo::BSONObjBuilder builder;
+    const char name[] = "thing";
+    const mongo::Decimal128 value1 = mongo::Decimal128(2);
+    builder.append(name, value1);
+    mongo::BSONObj source = builder.done();
+    const mongo::BSONElement thing = source.firstElement();
+    ASSERT_TRUE(thing.type() == mongo::NumberDecimal);
+
+    mmb::Document doc;
+
+    // Construct via direct call to append/make
+    ASSERT_OK(doc.root().appendDecimal(name, value1));
+    mmb::Element a = doc.root().rightChild();
+    ASSERT_TRUE(a.ok());
+    ASSERT_EQUALS(a.getType(), mongo::NumberDecimal);
+    ASSERT_TRUE(a.hasValue());
+    ASSERT_TRUE(value1.isEqual(mmb::ConstElement(a).getValueDecimal()));
+
+    // Construct via call passong BSON element
+    ASSERT_OK(doc.root().appendElement(thing));
+    mmb::Element b = doc.root().rightChild();
+    ASSERT_TRUE(b.ok());
+    ASSERT_EQUALS(b.getType(), mongo::NumberDecimal);
+    ASSERT_TRUE(b.hasValue());
+
+    // Construct via setValue call
+    ASSERT_OK(doc.root().appendNull(name));
+    mmb::Element c = doc.root().rightChild();
+    ASSERT_TRUE(c.ok());
+    c.setValueDecimal(value1);
+    ASSERT_EQUALS(c.getType(), mongo::NumberDecimal);
+    ASSERT_TRUE(c.hasValue());
+
+    // Ensure identity:
+    ASSERT_TRUE(identical(thing, mmb::ConstElement(a).getValue()));
+    ASSERT_TRUE(identical(a.getValue(), b.getValue()));
+    ASSERT_TRUE(identical(b.getValue(), c.getValue()));
+}
+
 TEST(TypeSupport, EncodingEquivalenceMinKey) {
     mongo::BSONObjBuilder builder;
     const char name[] = "thing";
@@ -2851,6 +2937,35 @@ TEST(DocumentInPlace, NumberDoubleLifecycle) {
     // ASSERT_TRUE(x.hasValue());
     // ASSERT_TRUE(x.isType(mongo::NumberDouble));
     // ASSERT_EQUALS(value1, x.getValueDouble());
+}
+
+TEST(DocumentInPlace, NumberDecimalLifecycle) {
+    const mongo::Decimal128 value1 = mongo::Decimal128(32);
+    const mongo::Decimal128 value2 = mongo::Decimal128(2);
+
+    mongo::BSONObj obj(BSON("x" << value1));
+    mmb::Document doc(obj, mmb::Document::kInPlaceEnabled);
+
+    mmb::Element x = doc.root().leftChild();
+
+    mmb::DamageVector damages;
+    const char* source = NULL;
+
+    x.setValueDecimal(value2);
+    ASSERT_TRUE(doc.getInPlaceUpdates(&damages, &source));
+    ASSERT_EQUALS(1U, damages.size());
+    apply(&obj, damages, source);
+    ASSERT_TRUE(x.hasValue());
+    ASSERT_TRUE(x.isType(mongo::NumberDecimal));
+    ASSERT_TRUE(value2.isEqual(x.getValueDecimal()));
+
+    // TODO: Re-enable when in-place updates to leaf elements is supported
+    // x.setValueDecimal(value1);
+    // ASSERT_TRUE(doc.getInPlaceUpdates(&damages, &source));
+    // apply(&obj, damages, source);
+    // ASSERT_TRUE(x.hasValue());
+    // ASSERT_TRUE(x.isType(mongo::NumberDecimal));
+    // ASSERT_TRUE(value1.isEqual(x.getValueDecimal()));
 }
 
 // Doubles and longs are the same size, 8 bytes, so we should be able to do in-place

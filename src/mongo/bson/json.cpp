@@ -862,7 +862,15 @@ Status JParse::numberDecimal(StringData fieldName, BSONObjBuilder& builder) {
     if (!readToken(LPAREN)) {
         return parseError("Expecting '('");
     }
-    Decimal128 val(_input);
+
+    std::string decString;
+    decString.reserve(NUMBERDECIMAL_RESERVE_SIZE);
+    Status ret = quotedString(&decString);
+    if (ret != Status::OK()) {
+        return ret;
+    }
+    Decimal128 val(decString);
+
     if (!readToken(RPAREN)) {
         return parseError("Expecting ')'");
     }
