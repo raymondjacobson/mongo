@@ -36,6 +36,7 @@
 #include <js/CharacterEncoding.h>
 
 #include "mongo/base/error_codes.h"
+#include "mongo/platform/decimal128.h"
 #include "mongo/scripting/mozjs/implscope.h"
 #include "mongo/scripting/mozjs/objectwrapper.h"
 #include "mongo/util/base64.h"
@@ -171,6 +172,23 @@ void ValueReader::fromBSONElement(const BSONElement& elem, bool readOnly) {
                     static_cast<unsigned long>(nativeUnsignedLong & 0x00000000ffffffff));
                 scope->getNumberLongProto().newInstance(args, _value);
             }
+
+            return;
+        }
+        case mongo::NumberDecimal: {
+            Decimal128 nativeDecimal = elem.numberDecimal();
+            // Store number decimals as strings
+            // Note: This prevents shell arithmetic, which is performed for number longs
+            // by converting them to doubles, which is imprecise. Until there is a better
+            // method to handle non-double shell arithmetic, decimals will remain
+            // as a non-numeric js type.
+            std::string decString = nativeDecimal.toString();
+            JS::AutoValueArray<1> args(_context);
+            ValueReader(_context, args[0]).fromStringData(decString);
+            JS::RootedObject obj(_context);
+
+            scope->getNumberDecimalProto().newInstance(args, &obj);
+            _value.setObjectOrNull(obj);
 
             return;
         }

@@ -215,6 +215,8 @@ void ValueWriter::_writeObject(BSONObjBuilder* b, StringData sd, JS::HandleObjec
         b->append(sd, out);
     } else if (scope->getNumberIntProto().instanceOf(obj)) {
         b->append(sd, NumberIntInfo::ToNumberInt(_context, obj));
+    } else if (scope->getNumberDecimalProto().instanceOf(obj)) {
+        b->append(sd, NumberDecimalInfo::ToNumberDecimal(_context, obj));
     } else if (scope->getDbPointerProto().instanceOf(obj)) {
         JS::RootedValue id(_context);
         o.getValue("id", &id);
