@@ -75,9 +75,8 @@ public:
         static const int HIGH_64 = 0;
         static const int LOW_64 = 1;
 #endif
-
-        uint64_t high64;
         uint64_t low64;
+        uint64_t high64;
 
         /**
          * Constructors for Decimal128Value
