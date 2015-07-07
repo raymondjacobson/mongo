@@ -288,13 +288,90 @@ double Decimal128::toDouble(RoundingMode roundMode) {
     return isAndToDouble(roundMode).first;
 }
 
-std::string Decimal128::toString() {
+std::string Decimal128::toString() const {
     BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    std::unique_ptr<char> c(new char());
+    std::unique_ptr<char[]> c(
+        new char[1 /* mantissa sign */ + 34 /* mantissa */ + 1 /* scientific E */ +
+                 1 /* exponent sign */ + 4 /* exponent */ + 1 /* null terminator */]);
     uint32_t idec_signaling_flags = 0;
     bid128_to_string(c.get(), dec128, &idec_signaling_flags);
-    std::string s = c.get();
-    return s;
+
+    std::string dec128String = c.get();
+    int precision = 0;
+    int exponent = 0;
+    int stringReadPosition = 0;
+
+    // Deal with a NaN and Infinity
+    std::string::size_type ePos = dec128String.find("E");
+    if (ePos == std::string::npos) {
+        if (dec128String == "-NaN" || dec128String == "+NaN")
+            return "NaN";
+        if (dec128String[0] == '+')
+            return "Inf";
+        return dec128String;
+    }
+
+    std::string exponentString = dec128String.substr(ePos);
+
+    // Get the value of the exponent, start at 2 to ignore the E and the sign
+    for (std::string::size_type i = 2; i < exponentString.size(); ++i) {
+        exponent = exponent * 10 + (exponentString[i] - '0');
+    }
+    if (exponentString[1] == '-') {
+        exponent *= -1;
+    }
+    // Get the total precision of the number
+    precision = dec128String.size() - exponentString.size() - 1 /* mantissa sign */;
+
+    std::string result;
+    // Initially result is set to equal just the sign of the dec128 string
+    // For formatting, leave off the sign if it is positive
+    if (dec128String[0] == '-')
+        result = dec128String.substr(0, 1);
+    stringReadPosition++;
+
+    int scientificExponent = precision - 1 + exponent;
+
+    if (scientificExponent >= 12 || scientificExponent <= -4) {
+        // Output in scientific format
+        result += dec128String.substr(stringReadPosition, 1);
+        stringReadPosition++;
+        precision--;
+        if (precision)
+            result += ".";
+        result += dec128String.substr(stringReadPosition, precision);
+        // Add the exponent
+        result += "E";
+        if (scientificExponent > 0)
+            result += "+";
+        result += std::to_string(scientificExponent);
+    } else {
+        // Regular format with no decimal palce
+        if (exponent >= 0) {
+            result += dec128String.substr(stringReadPosition, precision);
+            stringReadPosition += precision;
+        } else {
+            int radixPosition = precision + exponent;
+            if (radixPosition > 0) {
+                // Non-zero digits before radix point
+                result += dec128String.substr(stringReadPosition, radixPosition);
+                stringReadPosition += radixPosition;
+            } else {
+                // Leading zero before radix point
+                result += "0";
+            }
+
+            result += ".";
+            // Leading zeros after radix point
+            while (radixPosition++ < 0)
+                result += "0";
+
+            result +=
+                dec128String.substr(stringReadPosition, precision - std::max(radixPosition - 1, 0));
+        }
+    }
+
+    return result;
 }
 
 std::pair<int32_t, bool> Decimal128::isAndToInt(RoundingMode roundMode) {
