@@ -417,6 +417,64 @@ FieldParser::FieldState FieldParser::extractNumber(BSONElement elem,
     return FIELD_INVALID;
 }
 
+FieldParser::FieldState FieldParser::extract(BSONObj doc,
+                                             const BSONField<Decimal128>& field,
+                                             Decimal128* out,
+                                             string* errMsg) {
+    return extract(doc[field.name()], field, out, errMsg);
+}
+
+FieldParser::FieldState FieldParser::extract(BSONElement elem,
+                                             const BSONField<Decimal128>& field,
+                                             Decimal128* out,
+                                             string* errMsg) {
+    if (elem.eoo()) {
+        if (field.hasDefault()) {
+            *out = field.getDefault();
+            return FIELD_DEFAULT;
+        } else {
+            return FIELD_NONE;
+        }
+    }
+
+    if (elem.type() == NumberDecimal) {
+        *out = elem.numberDecimal();
+        return FIELD_SET;
+    }
+
+    _genFieldErrMsg(elem, field, "decimal", errMsg);
+    return FIELD_INVALID;
+}
+
+FieldParser::FieldState FieldParser::extractNumber(BSONObj doc,
+                                                   const BSONField<Decimal128>& field,
+                                                   Decimal128* out,
+                                                   string* errMsg) {
+    return extractNumber(doc[field.name()], field, out, errMsg);
+}
+
+FieldParser::FieldState FieldParser::extractNumber(BSONElement elem,
+                                                   const BSONField<Decimal128>& field,
+                                                   Decimal128* out,
+                                                   string* errMsg) {
+    if (elem.eoo()) {
+        if (field.hasDefault()) {
+            *out = field.getDefault();
+            return FIELD_DEFAULT;
+        } else {
+            return FIELD_NONE;
+        }
+    }
+
+    if (elem.isNumber()) {
+        *out = elem.numberDecimal();
+        return FIELD_SET;
+    }
+
+    _genFieldErrMsg(elem, field, "number", errMsg);
+    return FIELD_INVALID;
+}
+
 FieldParser::FieldState FieldParser::extractID(BSONObj doc,
                                                const BSONField<BSONObj>& field,
                                                BSONObj* out,
