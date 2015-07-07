@@ -378,10 +378,13 @@ v8::Handle<v8::Value> mongoAuth(V8Scope* scope, const v8::Arguments& args) {
             params = scope->v8ToMongo(args[0]->ToObject());
             break;
         case 3:
-            params = BSON(saslCommandMechanismFieldName
-                          << "MONGODB-CR" << saslCommandUserDBFieldName << toSTLString(args[0])
-                          << saslCommandUserFieldName << toSTLString(args[1])
-                          << saslCommandPasswordFieldName << toSTLString(args[2]));
+            params =
+                BSON(saslCommandMechanismFieldName << "MONGODB-CR" << saslCommandUserDBFieldName
+                                                   << toSTLString(args[0])
+                                                   << saslCommandUserFieldName
+                                                   << toSTLString(args[1])
+                                                   << saslCommandPasswordFieldName
+                                                   << toSTLString(args[2]));
             break;
         default:
             return v8AssertionException("mongoAuth takes 1 object or 3 string arguments");
@@ -426,7 +429,8 @@ v8::Handle<v8::Value> mongoCopyDatabaseWithSCRAM(V8Scope* scope, const v8::Argum
 
     BSONObj saslFirstCommandPrefix =
         BSON("copydbsaslstart" << 1 << "fromhost" << fromHost << "fromdb" << fromDb
-                               << saslCommandMechanismFieldName << "SCRAM-SHA-1");
+                               << saslCommandMechanismFieldName
+                               << "SCRAM-SHA-1");
 
     BSONObj saslFollowupCommandPrefix =
         BSON("copydb" << 1 << "fromhost" << fromHost << "fromdb" << fromDb << "todb" << toDb);
@@ -593,7 +597,8 @@ v8::Handle<v8::Value> dbInit(V8Scope* scope, const v8::Arguments& args) {
 
     argumentCheck(args.Length() == 2, "db constructor requires 2 arguments")
 
-        args.This()->ForceSet(scope->v8StringData("_mongo"), args[0]);
+        args.This()
+            ->ForceSet(scope->v8StringData("_mongo"), args[0]);
     args.This()->ForceSet(scope->v8StringData("_name"), args[1]);
 
     for (int i = 0; i < args.Length(); i++) {
@@ -889,7 +894,9 @@ v8::Handle<v8::Value> dbTimestampInit(V8Scope* scope, const v8::Arguments& args)
         int64_t largestVal = int64_t(Timestamp::max().getSecs());
         if (t > largestVal)
             return v8AssertionException(str::stream() << "The first argument must be in seconds; "
-                                                      << t << " is too large (max " << largestVal
+                                                      << t
+                                                      << " is too large (max "
+                                                      << largestVal
                                                       << ")");
         it->ForceSet(scope->v8StringData("t"), args[0]);
         it->ForceSet(scope->v8StringData("i"), args[1]);
@@ -1128,6 +1135,33 @@ v8::Handle<v8::Value> numberIntToString(V8Scope* scope, const v8::Arguments& arg
     v8::Handle<v8::Object> it = args.This();
     int val = numberIntVal(scope, it);
     string ret = str::stream() << "NumberInt(" << val << ")";
+    return v8::String::New(ret.c_str());
+}
+
+Decimal128 numberDecimalVal(V8Scope* scope, const v8::Handle<v8::Object>& it) {
+    verify(scope->NumberDecimalFT()->HasInstance(it));
+    return Decimal128(toSTLString(it->Get(v8::String::New("val"))));
+}
+
+v8::Handle<v8::Value> numberDecimalInit(V8Scope* scope, const v8::Arguments& args) {
+    if (!args.IsConstructCall()) {
+        v8::Handle<v8::Function> f = scope->NumberDecimalFT()->GetFunction();
+        return newInstance(f, args);
+    }
+
+    v8::Handle<v8::Object> it = args.This();
+    verify(scope->NumberDecimalFT()->HasInstance(it));
+    argumentCheck(args.Length() == 1, "NumberDecimal needs 1 argument");
+    argumentCheck(args[0]->IsString(), "NumberDecimal 1st parameter must be a string");
+
+    it->ForceSet(scope->v8StringData("val"), args[0]);
+    return it;
+}
+
+v8::Handle<v8::Value> numberDecimalToString(V8Scope* scope, const v8::Arguments& args) {
+    v8::Handle<v8::Object> it = args.This();
+    Decimal128 val = numberDecimalVal(scope, it);
+    string ret = str::stream() << "NumberDecimal(\"" << val.toString() << "\")";
     return v8::String::New(ret.c_str());
 }
 
