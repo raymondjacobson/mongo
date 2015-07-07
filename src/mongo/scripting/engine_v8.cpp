@@ -1418,6 +1418,7 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
     v8::Handle<v8::Value> argv[3];   // arguments for v8 instance constructors
     v8::Local<v8::Object> instance;  // instance of v8 type
     uint64_t nativeUnsignedLong;     // native representation of NumberLong
+    Decimal128 nativeDecimal;        // native representation of NumberDecimal
 
 
     switch (elem.type()) {
@@ -1471,7 +1472,8 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
             v8::Handle<v8::Value> ret = _jsRegExpConstructor->NewInstance(2, args);
             uassert(16863,
                     str::stream() << "Error converting " << elem.toString(false) << " in field "
-                                  << elem.fieldName() << " to a JS RegExp object: "
+                                  << elem.fieldName()
+                                  << " to a JS RegExp object: "
                                   << toSTLString(tryCatch.Exception()),
                     !tryCatch.HasCaught());
 
@@ -1495,7 +1497,8 @@ v8::Handle<v8::Value> V8Scope::mongoToV8Element(const BSONElement& elem, bool re
             v8::Handle<v8::Value> ret = TimestampFT()->GetFunction()->NewInstance(2, argv);
             uassert(17355,
                     str::stream() << "Error converting " << elem.toString(false) << " in field "
-                                  << elem.fieldName() << " to a JS Timestamp object: "
+                                  << elem.fieldName()
+                                  << " to a JS Timestamp object: "
                                   << toSTLString(tryCatch.Exception()),
                     !tryCatch.HasCaught());
 
@@ -1658,7 +1661,8 @@ void V8Scope::v8ToMongoElement(BSONObjBuilder& b,
     // Null char should be at the end, not in the string
     uassert(16985,
             str::stream() << "JavaScript property (name) contains a null char "
-                          << "which is not allowed in BSON. " << originalParent->jsonString(),
+                          << "which is not allowed in BSON. "
+                          << originalParent->jsonString(),
             (string::npos == sname.find('\0')));
 
     if (value->IsString()) {
@@ -1735,22 +1739,34 @@ BSONObj V8Scope::v8ToMongo(v8::Handle<v8::Object> o, int depth) {
     }
 
     v8::Local<v8::Array> names = o->GetOwnPropertyNames();
-    for (unsigned int i = 0; i < names->Length(); i++) {
-        v8::Local<v8::String> name = names->Get(i)->ToString();
 
-        if (depth == 0 && name->StrictEquals(strLitToV8("_id")))
-            continue;  // already handled above
-
+    // Special case the NumberDecimal since it cannot be stored (and therefore compared)
+    // numerically in Javascript as raw BSON Elements. Instead, build an object and compare.
+    if (NumberDecimalFT()->HasInstance(o)) {
+        v8::Local<v8::String> name = names->Get(0)->ToString();
         V8String sname(name);
-        v8::Local<v8::Value> value = o->Get(name);
-        v8ToMongoElement(b, sname, value, depth + 1, &originalBSON);
+        v8ToMongoObject(b, sname, o, depth, &originalBSON);
+    } else {
+        for (unsigned int i = 0; i < names->Length(); i++) {
+            v8::Local<v8::String> name = names->Get(i)->ToString();
+
+            if (depth == 0 && name->StrictEquals(strLitToV8("_id")))
+                continue;  // already handled above
+
+            V8String sname(name);
+            v8::Local<v8::Value> value = o->Get(name);
+            v8ToMongoElement(b, sname, value, depth + 1, &originalBSON);
+        }
     }
 
     const int sizeWithEOO = b.len() + 1 /*EOO*/ - 4 /*BSONObj::Holder ref count*/;
     uassert(17260,
             str::stream() << "Converting from JavaScript to BSON failed: "
-                          << "Object size " << sizeWithEOO << " exceeds limit of "
-                          << BSONObjMaxInternalSize << " bytes.",
+                          << "Object size "
+                          << sizeWithEOO
+                          << " exceeds limit of "
+                          << BSONObjMaxInternalSize
+                          << " bytes.",
             sizeWithEOO <= BSONObjMaxInternalSize);
 
     return b.obj();  // Would give an uglier error than above for oversized objects.
