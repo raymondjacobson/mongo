@@ -340,3 +340,11 @@ def removeIfPresent(lst, item):
 
 for to_remove in ['-Werror', '-Wall', '-W']:
     removeIfPresent(env['CCFLAGS'], to_remove)
+
+# Build tests for intel library
+
+test = env.Program('intel_test',
+    ['TESTS/readtest.c'],
+    LIBDEPS=['intel_decimal128'])
+
+env.Install('#build/third_party_tests', test)
