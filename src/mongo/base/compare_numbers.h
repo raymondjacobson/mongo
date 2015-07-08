@@ -149,9 +149,50 @@ inline int compareDecimals(long long lhs, Decimal128 rhs) {
     return -compareDecimals(rhs, Decimal128(lhs));
 }
 
-// Case 6
+// Case 6 NON TRIVIAL
 inline int compareDecimals(Decimal128 lhs, double rhs) {
-    return compareDecimals(lhs, Decimal128(rhs));
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    double decToDouble = lhs.toDouble(&sigFlag, Decimal128::RoundingMode::kRoundTowardNegative);
+
+    if (decToDouble == rhs) {
+        // If our conversion was not exact, lhs was necessarily greater than rhs
+        // otherwise, they are equal
+        if ((sigFlag | Decimal128::SignalingFlag::kInexact) == sigFlag) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if (decToDouble < rhs) {
+        // If our conversion was not exact, compare against next below double
+        // otherwise, lhs < rhs
+        if ((sigFlag | Decimal128::SignalingFlag::kInexact) == sigFlag) {
+            if (decToDouble <= std::nextafter(rhs, -std::numeric_limits<double>::max())) {
+                return -1;
+            } else {
+                return 0;
+            }
+        } else {
+            return -1;
+        }
+    } else if (decToDouble > rhs) {
+        // If our conversion was not exact, compare against next above double
+        // otherwise, lhs < rhs
+        if ((sigFlag | Decimal128::SignalingFlag::kInexact) == sigFlag) {
+            if (decToDouble >= std::nextafter(rhs, std::numeric_limits<double>::max())) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return 1;
+        }
+    }
+
+    if (lhs.isNaN())
+        return (std::isnan(rhs) ? 0 : -1);
+    dassert(std::isnan(rhs));
+    return 1;
+
 }
 
 // Case 7

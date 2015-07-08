@@ -634,66 +634,80 @@ TEST_F(Decimal128Test, TestDecimal128ToStringNegInf) {
     ASSERT_EQUALS(result, "NaN");
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "2";
-    Decimal128 d(s);
-    std::pair<int32_t, bool> result;
-    result = d.isAndToInt(roundMode);
-    ASSERT_EQUALS(result.first, 2);
-    ASSERT_EQUALS(result.second, true);
+// Tests for Decimal128 operations that use a signaling flag
+TEST_F(Decimal128Test, TestDecimal128ToIntSignaling) {
+    Decimal128 d("NaN");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    int32_t intVal = d.toInt(&sigFlag);
+    ASSERT_EQUALS(intVal, std::numeric_limits<int32_t>::min());
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInvalid);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "2.6";
-    Decimal128 d(s);
-    std::pair<int32_t, bool> result;
-    result = d.isAndToInt(roundMode);
-    ASSERT_EQUALS(result.first, 3);
-    ASSERT_EQUALS(result.second, false);
+TEST_F(Decimal128Test, TestDecimal128ToLongSignaling) {
+    Decimal128 d("Infinity");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    int64_t longVal = d.toLong(&sigFlag);
+    ASSERT_EQUALS(longVal, std::numeric_limits<int64_t>::lowest());
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInvalid);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "1125899906842624";
-    Decimal128 d(s);
-    std::pair<int64_t, bool> result;
-    result = d.isAndToLong(roundMode);
-    ASSERT_EQUALS(result.first, 1125899906842624);
-    ASSERT_EQUALS(result.second, true);
+TEST_F(Decimal128Test, TestDecimal128ToIntExactSignaling) {
+    Decimal128 d("10000000000000000");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    int32_t intVal = d.toInt(&sigFlag);
+    ASSERT_EQUALS(intVal, -std::numeric_limits<int32_t>::lowest());
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInvalid); //TODO
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "1125899906842624.8";
-    Decimal128 d(s);
-    std::pair<int64_t, bool> result;
-    result = d.isAndToLong(roundMode);
-    ASSERT_EQUALS(result.first, 1125899906842625);
-    ASSERT_EQUALS(result.second, false);
+TEST_F(Decimal128Test, TestDecimal128ToLongExactSignaling) {
+    Decimal128 d("100000000000000000000000000");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    int64_t longVal = d.toLong(&sigFlag);
+    ASSERT_EQUALS(longVal, -std::numeric_limits<int64_t>::lowest());
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInvalid); //TODO
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "0.125";
-    Decimal128 d(s);
-    std::pair<double, bool> result;
-    result = d.isAndToDouble(roundMode);
-    ASSERT_EQUALS(result.first, 0.125);
-    ASSERT_EQUALS(result.second, true);
+TEST_F(Decimal128Test, TestDecimal128ToDoubleSignaling) {
+    Decimal128 d("0.1");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    double doubleVal = d.toDouble(&sigFlag);
+    ASSERT_EQUALS(doubleVal, 0.1);
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInexact);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
-    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
-    std::string s = "0.1";
-    Decimal128 d(s);
-    std::pair<double, bool> result;
-    result = d.isAndToDouble(roundMode);
-    ASSERT_EQUALS(result.first, 0.1);
-    ASSERT_EQUALS(result.second, false);
+TEST_F(Decimal128Test, TestDecimal128AddSignaling) {
+    Decimal128 d1("0.1");
+    Decimal128 d2("0.1");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    d1.add(d2, &sigFlag);
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kNoFlag);
 }
 
+TEST_F(Decimal128Test, TestDecimal128SubtractSignaling) {
+    Decimal128 d = Decimal128::getNegMin();
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    Decimal128 res = d.subtract(Decimal128(1), &sigFlag);
+    ASSERT_TRUE(res.isEqual(Decimal128::getNegMin()));
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kInexact);
+}
+
+TEST_F(Decimal128Test, TestDecimal128MultiplySignaling) {
+    Decimal128 d("2");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    Decimal128 res = d.multiply(Decimal128::getPosMax(), &sigFlag);
+    ASSERT_TRUE(res.isEqual(Decimal128::getPosInfinity()));
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kOverflow);
+}
+
+TEST_F(Decimal128Test, TestDecimal128DivideSignaling) {
+    Decimal128 d("2");
+    uint32_t sigFlag = Decimal128::SignalingFlag::kNoFlag;
+    Decimal128 res = d.divide(Decimal128(0), &sigFlag);
+    ASSERT_TRUE(res.isEqual(Decimal128::getPosInfinity()));
+    ASSERT_EQUALS(sigFlag, sigFlag | Decimal128::SignalingFlag::kDivideByZero);
+}
+
+// Test Decimal128 special comparisons
 TEST_F(Decimal128Test, TestDecimal128IsZero) {
     Decimal128 d1(0);
     Decimal128 d2(500);
