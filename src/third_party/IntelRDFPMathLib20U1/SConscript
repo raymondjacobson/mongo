@@ -343,8 +343,11 @@ for to_remove in ['-Werror', '-Wall', '-W']:
 
 # Build tests for intel library
 
-test = env.Program('intel_test',
+test = env.Program('readtest',
     ['TESTS/readtest.c'],
     LIBDEPS=['intel_decimal128'])
+test_input = env.File('TESTS/readtest.in')
 
-env.Install('#build/third_party_tests', test)
+install_tests = env.Install('#build/third_party_tests/intel', [test, test_input])
+
+env.Alias('intel_tests', install_tests)
