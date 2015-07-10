@@ -33,92 +33,68 @@
 #include <utility>
 
 #include "mongo/config.h"
-#include "mongo/platform/endian.h"
 #include "mongo/stdx/memory.h"
 #include "mongo/unittest/unittest.h"
 
 namespace mongo {
 
-class Decimal128Test : public mongo::unittest::Test {
-protected:
-    int HIGH_64;
-    int LOW_64;
-    void setUp() {
-#if MONGO_CONFIG_BYTE_ORDER == 1234
-        HIGH_64 = 1;
-        LOW_64 = 0;
-#else
-        HIGH_64 = 0;
-        LOW_64 = 1;
-#endif
-    }
-};
-
 // Tests for Decimal128 constructors
-TEST_F(Decimal128Test, TestDefaultConstructor) {
-    Decimal128 d;
-    Decimal128::Decimal128Value val = d.getValue();
-    uint64_t ullZero = 0;
-    ASSERT_EQUALS(val.high64, ullZero);
-    ASSERT_EQUALS(val.low64, ullZero);
-}
-
-TEST_F(Decimal128Test, TestInt32ConstructorZero) {
+TEST(Decimal128Test, TestInt32ConstructorZero) {
     int32_t intZero = 0;
     Decimal128 d(intZero);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 0000000000000000 = +0E+0
-    uint64_t highBytes = std::stoull("3040000000000000", nullptr, 16);
-    uint64_t lowBytes = std::stoull("0000000000000000", nullptr, 16);
+    uint64_t highBytes = 0x3040000000000000ull;
+    uint64_t lowBytes = 0x0000000000000000ull;
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestInt32ConstructorMax) {
+TEST(Decimal128Test, TestInt32ConstructorMax) {
     int32_t intMax = 2147483647;
     Decimal128 d(intMax);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 000000007fffffff = +2147483647E+0
-    uint64_t highBytes = std::stoull("3040000000000000", nullptr, 16);
-    uint64_t lowBytes = std::stoull("000000007fffffff", nullptr, 16);
+    uint64_t highBytes = 0x3040000000000000ull;
+    uint64_t lowBytes = 0x000000007fffffffull;
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestInt32ConstructorMin) {
+TEST(Decimal128Test, TestInt32ConstructorMin) {
     int32_t intMin = -2147483648;
     Decimal128 d(intMin);
     Decimal128::Decimal128Value val = d.getValue();
     // 0xb040000000000000 000000007fffffff = -2147483648E+0
-    uint64_t highBytes = std::stoull("b040000000000000", nullptr, 16);
-    uint64_t lowBytes = std::stoull("0000000080000000", nullptr, 16);
+    uint64_t highBytes = 0xb040000000000000ull;
+    uint64_t lowBytes = 0x0000000080000000ull;
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestInt64ConstructorZero) {
+TEST(Decimal128Test, TestInt64ConstructorZero) {
     int64_t longZero = 0;
     Decimal128 d(longZero);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 0000000000000000 = +0E+0
-    uint64_t highBytes = std::stoull("3040000000000000", nullptr, 16);
-    uint64_t lowBytes = std::stoull("0000000000000000", nullptr, 16);
+    uint64_t highBytes = 0x3040000000000000ull;
+    uint64_t lowBytes = 0x0000000000000000ull;
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestInt64ConstructorMax) {
+TEST(Decimal128Test, TestInt64ConstructorMax) {
     int64_t longMax = LONG_MAX;
     Decimal128 d(longMax);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 7fffffffffffffff = +9223372036854775807E+0
-    uint64_t highBytes = std::stoull("3040000000000000", nullptr, 16);
-    uint64_t lowBytes = std::stoull("7fffffffffffffff", nullptr, 16);
+    uint64_t highBytes = 0x3040000000000000ull;
+    uint64_t lowBytes = 0x7fffffffffffffffull;
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestInt64ConstructorMin) {
+TEST(Decimal128Test, TestInt64ConstructorMin) {
     int64_t longMin = LONG_MIN;
     Decimal128 d(longMin);
     Decimal128::Decimal128Value val = d.getValue();
@@ -129,124 +105,124 @@ TEST_F(Decimal128Test, TestInt64ConstructorMin) {
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant1) {
+TEST(Decimal128Test, TestDoubleConstructorQuant1) {
     double dbl = 0.1 / 10;
     Decimal128 d(dbl);
     Decimal128 e("0.01");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant2) {
+TEST(Decimal128Test, TestDoubleConstructorQuant2) {
     double dbl = 0.1 / 10000;
     Decimal128 d(dbl);
     Decimal128 e("0.00001");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant3) {
+TEST(Decimal128Test, TestDoubleConstructorQuant3) {
     double dbl = 0.1 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1E-19");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant4) {
+TEST(Decimal128Test, TestDoubleConstructorQuant4) {
     double dbl = 0.01 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
     Decimal128 d(dbl);
     Decimal128 e("100000000000000E+2");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant5) {
+TEST(Decimal128Test, TestDoubleConstructorQuant5) {
     double dbl = 0.0127;
     Decimal128 d(dbl);
     Decimal128 e("0.0127");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant6) {
+TEST(Decimal128Test, TestDoubleConstructorQuant6) {
     double dbl = 1234567890.12709;
     Decimal128 d(dbl);
     Decimal128 e("1234567890.12709");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuant7) {
+TEST(Decimal128Test, TestDoubleConstructorQuant7) {
     double dbl = 0.1129857 / 1000 / 1000 / 1000 / 1000 / 1000 / 1000;
     Decimal128 d(dbl);
     Decimal128 e("1.12985700000000E-19");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorQuantFailPoorLog10Of2Estimate) {
+TEST(Decimal128Test, TestDoubleConstructorQuantFailPoorLog10Of2Estimate) {
     double dbl = exp2(1000);
     Decimal128 d(dbl);
     Decimal128 e("1.07150860718627E301");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorZero) {
+TEST(Decimal128Test, TestDoubleConstructorZero) {
     double doubleZero = 0;
     Decimal128 d(doubleZero);
     Decimal128 e("0");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorNeg) {
+TEST(Decimal128Test, TestDoubleConstructorNeg) {
     double doubleNeg = -1.0;
     Decimal128 d(doubleNeg);
     Decimal128 e("-1.0");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundDown) {
+TEST(Decimal128Test, TestDoubleConstructorMaxRoundDown) {
     double doubleMax = DBL_MAX;
     Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardNegative);
     Decimal128 e("179769313486231E294");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorMaxRoundUp) {
+TEST(Decimal128Test, TestDoubleConstructorMaxRoundUp) {
     double doubleMax = DBL_MAX;
     Decimal128 d(doubleMax, Decimal128::RoundingMode::kRoundTowardPositive);
     Decimal128 e("179769313486232E294");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorMaxNeg) {
+TEST(Decimal128Test, TestDoubleConstructorMaxNeg) {
     double doubleMax = -1 * DBL_MAX;
     Decimal128 d(doubleMax);
     Decimal128 e("-179769313486232E294");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorMin) {
+TEST(Decimal128Test, TestDoubleConstructorMin) {
     double min = DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("2.22507385850720E-308");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorMinNeg) {
+TEST(Decimal128Test, TestDoubleConstructorMinNeg) {
     double min = -DBL_MIN;
     Decimal128 d(min);
     Decimal128 e("-2.22507385850720E-308");
     ASSERT_TRUE(d.isEqual(e));
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorInfinity) {
+TEST(Decimal128Test, TestDoubleConstructorInfinity) {
     double dbl = std::numeric_limits<double>::infinity();
     Decimal128 d(dbl);
     ASSERT_TRUE(d.isInfinite());
 }
 
-TEST_F(Decimal128Test, TestDoubleConstructorNaN) {
+TEST(Decimal128Test, TestDoubleConstructorNaN) {
     double dbl = std::numeric_limits<double>::quiet_NaN();
     Decimal128 d(dbl);
     ASSERT_TRUE(d.isNaN());
 }
 
-TEST_F(Decimal128Test, TestStringConstructorInRange) {
+TEST(Decimal128Test, TestStringConstructorInRange) {
     std::string s = "+2.010";
     Decimal128 d(s);
     Decimal128::Decimal128Value val = d.getValue();
@@ -257,7 +233,7 @@ TEST_F(Decimal128Test, TestStringConstructorInRange) {
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestStringConstructorPosInfinity) {
+TEST(Decimal128Test, TestStringConstructorPosInfinity) {
     std::string s = "+INFINITY";
     Decimal128 d(s);
     Decimal128::Decimal128Value val = d.getValue();
@@ -268,7 +244,7 @@ TEST_F(Decimal128Test, TestStringConstructorPosInfinity) {
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestStringConstructorNegInfinity) {
+TEST(Decimal128Test, TestStringConstructorNegInfinity) {
     std::string s = "-INFINITY";
     Decimal128 d(s);
     Decimal128::Decimal128Value val = d.getValue();
@@ -279,7 +255,7 @@ TEST_F(Decimal128Test, TestStringConstructorNegInfinity) {
     ASSERT_EQUALS(val.low64, lowBytes);
 }
 
-TEST_F(Decimal128Test, TestStringConstructorNaN) {
+TEST(Decimal128Test, TestStringConstructorNaN) {
     std::string s = "I am not a number!";
     Decimal128 d(s);
     Decimal128::Decimal128Value val = d.getValue();
@@ -289,8 +265,23 @@ TEST_F(Decimal128Test, TestStringConstructorNaN) {
     ASSERT_EQUALS(val.high64, highBytes);
     ASSERT_EQUALS(val.low64, lowBytes);
 }
+
+// Tests for absolute value function
+TEST(Decimal128Test, TestAbsValuePos) {
+    Decimal128 d(25);
+    Decimal128 dAbs = d.toAbs();
+    ASSERT_TRUE(dAbs.isEqual(d));
+}
+
+TEST(Decimal128Test, TestAbsValueNeg) {
+    Decimal128 d(-25);
+    Decimal128 dAbs = d.toAbs();
+    ASSERT_TRUE(dAbs.isEqual(Decimal128(25)));
+}
+
+
 // Tests for Decimal128 conversions
-TEST_F(Decimal128Test, TestDecimal128ToInt32Even) {
+TEST(Decimal128Test, TestDecimal128ToInt32Even) {
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-3, -2, -2, 2, 2, 3};
     std::unique_ptr<Decimal128> decPtr;
@@ -300,7 +291,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Even) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt32Neg) {
+TEST(Decimal128Test, TestDecimal128ToInt32Neg) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-3, -3, -3, 2, 2, 2};
@@ -311,7 +302,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Neg) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt32Pos) {
+TEST(Decimal128Test, TestDecimal128ToInt32Pos) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-2, -2, -2, 3, 3, 3};
@@ -322,7 +313,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Pos) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt32Zero) {
+TEST(Decimal128Test, TestDecimal128ToInt32Zero) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-2, -2, -2, 2, 2, 2};
@@ -333,7 +324,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Zero) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt32Away) {
+TEST(Decimal128Test, TestDecimal128ToInt32Away) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
     std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
     int32_t out[6] = {-3, -3, -2, 2, 3, 3};
@@ -344,7 +335,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt32Away) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt64Even) {
+TEST(Decimal128Test, TestDecimal128ToInt64Even) {
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
                          "-4294967296.2",
@@ -359,7 +350,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Even) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt64Neg) {
+TEST(Decimal128Test, TestDecimal128ToInt64Neg) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
@@ -375,7 +366,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Neg) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt64Pos) {
+TEST(Decimal128Test, TestDecimal128ToInt64Pos) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
@@ -391,7 +382,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Pos) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt64Zero) {
+TEST(Decimal128Test, TestDecimal128ToInt64Zero) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
@@ -407,7 +398,7 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Zero) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToInt64Away) {
+TEST(Decimal128Test, TestDecimal128ToInt64Away) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
     std::string in[6] = {"-4294967296.7",
                          "-4294967296.5",
@@ -423,28 +414,28 @@ TEST_F(Decimal128Test, TestDecimal128ToInt64Away) {
     }
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToDoubleNormal) {
+TEST(Decimal128Test, TestDecimal128ToDoubleNormal) {
     std::string s = "+2.015";
     Decimal128 d(s);
     double result = d.toDouble();
     ASSERT_EQUALS(result, 2.015);
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToDoubleZero) {
+TEST(Decimal128Test, TestDecimal128ToDoubleZero) {
     std::string s = "+0.000";
     Decimal128 d(s);
     double result = d.toDouble();
     ASSERT_EQUALS(result, 0.0);
 }
 
-TEST_F(Decimal128Test, TestDecimal128ToString) {
+TEST(Decimal128Test, TestDecimal128ToString) {
     std::string s = "-2087.015E+281";
     Decimal128 d(s);
     std::string result = d.toString();
     ASSERT_EQUALS(result, "-2087015E+278");
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
+TEST(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "2";
     Decimal128 d(s);
@@ -454,7 +445,7 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {
     ASSERT_EQUALS(result.second, true);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
+TEST(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "2.6";
     Decimal128 d(s);
@@ -464,7 +455,7 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithNonInt) {
     ASSERT_EQUALS(result.second, false);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
+TEST(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "1125899906842624";
     Decimal128 d(s);
@@ -474,7 +465,7 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithLong) {
     ASSERT_EQUALS(result.second, true);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
+TEST(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "1125899906842624.8";
     Decimal128 d(s);
@@ -484,7 +475,7 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToLongWithNonLong) {
     ASSERT_EQUALS(result.second, false);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
+TEST(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "0.125";
     Decimal128 d(s);
@@ -494,7 +485,7 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithDouble) {
     ASSERT_EQUALS(result.second, true);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
+TEST(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
     Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToEven;
     std::string s = "0.1";
     Decimal128 d(s);
@@ -504,14 +495,14 @@ TEST_F(Decimal128Test, TestDecimal128IsAndToDoubleWithNonDouble) {
     ASSERT_EQUALS(result.second, false);
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsZero) {
+TEST(Decimal128Test, TestDecimal128IsZero) {
     Decimal128 d1(0);
     Decimal128 d2(500);
     ASSERT_TRUE(d1.isZero());
     ASSERT_FALSE(d2.isZero());
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsNaN) {
+TEST(Decimal128Test, TestDecimal128IsNaN) {
     Decimal128 d1("NaN");
     Decimal128 d2("10.5");
     Decimal128 d3("Inf");
@@ -520,7 +511,7 @@ TEST_F(Decimal128Test, TestDecimal128IsNaN) {
     ASSERT_FALSE(d3.isNaN());
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsInfinite) {
+TEST(Decimal128Test, TestDecimal128IsInfinite) {
     Decimal128 d1("NaN");
     Decimal128 d2("10.5");
     Decimal128 d3("Inf");
@@ -531,7 +522,7 @@ TEST_F(Decimal128Test, TestDecimal128IsInfinite) {
     ASSERT_TRUE(d4.isInfinite());
 }
 
-TEST_F(Decimal128Test, TestDecimal128IsNegative) {
+TEST(Decimal128Test, TestDecimal128IsNegative) {
     Decimal128 d1("NaN");
     Decimal128 d2("-NaN");
     Decimal128 d3("10.5");
@@ -547,7 +538,7 @@ TEST_F(Decimal128Test, TestDecimal128IsNegative) {
 }
 
 // Tests for Decimal128 math operations
-TEST_F(Decimal128Test, TestDecimal128AdditionCase1) {
+TEST(Decimal128Test, TestDecimal128AdditionCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.add(d2);
@@ -556,7 +547,7 @@ TEST_F(Decimal128Test, TestDecimal128AdditionCase1) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128AdditionCase2) {
+TEST(Decimal128Test, TestDecimal128AdditionCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("2.000");
     Decimal128 result = d1.add(d2);
@@ -565,7 +556,7 @@ TEST_F(Decimal128Test, TestDecimal128AdditionCase2) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128SubtractionCase1) {
+TEST(Decimal128Test, TestDecimal128SubtractionCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.subtract(d2);
@@ -574,7 +565,7 @@ TEST_F(Decimal128Test, TestDecimal128SubtractionCase1) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128SubtractionCase2) {
+TEST(Decimal128Test, TestDecimal128SubtractionCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("2.000");
     Decimal128 result = d1.subtract(d2);
@@ -583,7 +574,7 @@ TEST_F(Decimal128Test, TestDecimal128SubtractionCase2) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128MultiplicationCase1) {
+TEST(Decimal128Test, TestDecimal128MultiplicationCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.multiply(d2);
@@ -592,7 +583,7 @@ TEST_F(Decimal128Test, TestDecimal128MultiplicationCase1) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128MultiplicationCase2) {
+TEST(Decimal128Test, TestDecimal128MultiplicationCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("2.000");
     Decimal128 result = d1.multiply(d2);
@@ -601,7 +592,7 @@ TEST_F(Decimal128Test, TestDecimal128MultiplicationCase2) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128DivisionCase1) {
+TEST(Decimal128Test, TestDecimal128DivisionCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-50.5218E19");
     Decimal128 result = d1.divide(d2);
@@ -610,7 +601,7 @@ TEST_F(Decimal128Test, TestDecimal128DivisionCase1) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128DivisionCase2) {
+TEST(Decimal128Test, TestDecimal128DivisionCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("2.000");
     Decimal128 result = d1.divide(d2);
@@ -619,7 +610,7 @@ TEST_F(Decimal128Test, TestDecimal128DivisionCase2) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128Quantizer) {
+TEST(Decimal128Test, TestDecimal128Quantizer) {
     Decimal128 expected("1.00001");
     Decimal128 val("1.000008");
     Decimal128 ref("0.00001");
@@ -629,187 +620,187 @@ TEST_F(Decimal128Test, TestDecimal128Quantizer) {
 }
 
 // Tests for Decimal128 comparison operations
-TEST_F(Decimal128Test, TestDecimal128EqualCase1) {
+TEST(Decimal128Test, TestDecimal128EqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
     bool result = d1.isEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128EqualCase2) {
+TEST(Decimal128Test, TestDecimal128EqualCase2) {
     Decimal128 d1("1.00");
     Decimal128 d2("1.000000000");
     bool result = d1.isEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128EqualCase3) {
+TEST(Decimal128Test, TestDecimal128EqualCase3) {
     Decimal128 d1("0.1");
     Decimal128 d2("0.100000000000000005");
     bool result = d1.isEqual(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128NotEqualCase1) {
+TEST(Decimal128Test, TestDecimal128NotEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.06E20");
     bool result = d1.isNotEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128NotEqualCase2) {
+TEST(Decimal128Test, TestDecimal128NotEqualCase2) {
     Decimal128 d1("-25.0001E20");
     Decimal128 d2("-25.00010E20");
     bool result = d1.isNotEqual(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterCase1) {
+TEST(Decimal128Test, TestDecimal128GreaterCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
     bool result = d1.isGreater(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterCase2) {
+TEST(Decimal128Test, TestDecimal128GreaterCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
     bool result = d1.isGreater(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterCase3) {
+TEST(Decimal128Test, TestDecimal128GreaterCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
     bool result = d1.isGreater(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase1) {
+TEST(Decimal128Test, TestDecimal128GreaterEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
     bool result = d1.isGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase2) {
+TEST(Decimal128Test, TestDecimal128GreaterEqualCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
     bool result = d1.isGreaterEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GreaterEqualCase3) {
+TEST(Decimal128Test, TestDecimal128GreaterEqualCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
     bool result = d1.isGreaterEqual(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessCase1) {
+TEST(Decimal128Test, TestDecimal128LessCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
     bool result = d1.isLess(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessCase2) {
+TEST(Decimal128Test, TestDecimal128LessCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
     bool result = d1.isLess(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessCase3) {
+TEST(Decimal128Test, TestDecimal128LessCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
     bool result = d1.isLess(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessEqualCase1) {
+TEST(Decimal128Test, TestDecimal128LessEqualCase1) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("-25.05E20");
     bool result = d1.isLessEqual(d2);
     ASSERT_FALSE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessEqualCase2) {
+TEST(Decimal128Test, TestDecimal128LessEqualCase2) {
     Decimal128 d1("25.05E20");
     Decimal128 d2("25.05E20");
     bool result = d1.isLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128LessEqualCase3) {
+TEST(Decimal128Test, TestDecimal128LessEqualCase3) {
     Decimal128 d1("-INFINITY");
     Decimal128 d2("+INFINITY");
     bool result = d1.isLessEqual(d2);
     ASSERT_TRUE(result);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetPosMin) {
-    Decimal128 d = Decimal128::getPosMin();
-    uint64_t high = 0;
-    uint64_t low = 1;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetLargestPositive) {
+    Decimal128 d = Decimal128::kLargestPositive;
+    uint64_t largestPositiveDecimalHigh64 = 6917508178773903296ull;
+    uint64_t largestPositveDecimalLow64 = 4003012203950112767ull;
+    ASSERT_EQUALS(d.getValue().high64, largestPositiveDecimalHigh64);
+    ASSERT_EQUALS(d.getValue().low64, largestPositveDecimalLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetPosMax) {
-    Decimal128 d = Decimal128::getPosMax();
-    uint64_t high = 6917508178773903296ull;
-    uint64_t low = 4003012203950112767ull;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetSmallestPositive) {
+    Decimal128 d = Decimal128::kSmallestPositive;
+    uint64_t smallestPositiveDecimalHigh64 = 0;
+    uint64_t smallestPositiveDecimalLow64 = 1;
+    ASSERT_EQUALS(d.getValue().high64, smallestPositiveDecimalHigh64);
+    ASSERT_EQUALS(d.getValue().low64, smallestPositiveDecimalLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetNegMin) {
-    Decimal128 d = Decimal128::getNegMin();
-    uint64_t high = 16140880215628679104ull;
-    uint64_t low = 4003012203950112767ull;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetLargestNegative) {
+    Decimal128 d = Decimal128::kLargestNegative;
+    uint64_t largestNegativeDecimalHigh64 = 16140880215628679104ull;
+    uint64_t largestNegativeDecimalLow64 = 4003012203950112767ull;
+    ASSERT_EQUALS(d.getValue().high64, largestNegativeDecimalHigh64);
+    ASSERT_EQUALS(d.getValue().low64, largestNegativeDecimalLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetNegMax) {
-    Decimal128 d = Decimal128::getNegMax();
-    uint64_t high = 9223372036854775808ull;
-    uint64_t low = 1ull;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetSmallestNegative) {
+    Decimal128 d = Decimal128::kSmallestNegative;
+    uint64_t smallestNegativeDecimalHigh64 = 9223372036854775808ull;
+    uint64_t smallestNegativeDecimalLow64 = 1ull;
+    ASSERT_EQUALS(d.getValue().high64, smallestNegativeDecimalHigh64);
+    ASSERT_EQUALS(d.getValue().low64, smallestNegativeDecimalLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetPosInfinity) {
-    Decimal128 d = Decimal128::getPosInfinity();
-    uint64_t high = 8646911284551352320ull;
-    uint64_t low = 0;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetPosInfinity) {
+    Decimal128 d = Decimal128::kPositiveInfinity;
+    uint64_t decimalPositiveInfinityHigh64 = 8646911284551352320ull;
+    uint64_t decimalPositiveInfinityLow64 = 0;
+    ASSERT_EQUALS(d.getValue().high64, decimalPositiveInfinityHigh64);
+    ASSERT_EQUALS(d.getValue().low64, decimalPositiveInfinityLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetNegInfinity) {
-    Decimal128 d = Decimal128::getNegInfinity();
-    uint64_t high = 17870283321406128128ull;
-    uint64_t low = 0;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetNegInfinity) {
+    Decimal128 d = Decimal128::kNegativeInfinity;
+    uint64_t decimalNegativeInfinityHigh64 = 17870283321406128128ull;
+    uint64_t decimalNegativeInfinityLow64 = 0;
+    ASSERT_EQUALS(d.getValue().high64, decimalNegativeInfinityHigh64);
+    ASSERT_EQUALS(d.getValue().low64, decimalNegativeInfinityLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetPosNaN) {
-    Decimal128 d = Decimal128::getPosNaN();
-    uint64_t high = 8935141660703064064ull;
-    uint64_t low = 0;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetPosNaN) {
+    Decimal128 d = Decimal128::kPositiveNaN;
+    uint64_t decimalPositiveNaNHigh64 = 8935141660703064064ull;
+    uint64_t decimalPositiveNaNLow64 = 0;
+    ASSERT_EQUALS(d.getValue().high64, decimalPositiveNaNHigh64);
+    ASSERT_EQUALS(d.getValue().low64, decimalPositiveNaNLow64);
 }
 
-TEST_F(Decimal128Test, TestDecimal128GetNegNaN) {
-    Decimal128 d = Decimal128::getNegNaN();
-    uint64_t high = 18158513697557839872ull;
-    uint64_t low = 0;
-    ASSERT_EQUALS(d.getValue().high64, high);
-    ASSERT_EQUALS(d.getValue().low64, low);
+TEST(Decimal128Test, TestDecimal128GetNegNaN) {
+    Decimal128 d = Decimal128::kNegativeNaN;
+    uint64_t decimalNegativeNaNHigh64 = 18158513697557839872ull;
+    uint64_t decimalNegativeNaNLow64 = 0;
+    ASSERT_EQUALS(d.getValue().high64, decimalNegativeNaNHigh64);
+    ASSERT_EQUALS(d.getValue().low64, decimalNegativeNaNLow64);
 }
 
 }  // namespace mongo

@@ -28,12 +28,13 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
 #include <utility>
 
-#include "mongo/platform/cstdint.h"
+#include "mongo/config.h"
 
 namespace mongo {
 
@@ -45,9 +46,35 @@ namespace mongo {
 class Decimal128 {
 public:
     /**
+     * Static constants to get Decimal128 representations of specific numbers
+     * kLargestPositive -> 9999999999999999999999999999999999E6111
+     * kSmallestPositive -> 1E-6176
+     * kLargestNegative -> -9999999999999999999999999999999999E6111
+     * kSmallestNegative -> -1E-6176
+     */
+    static const Decimal128 kLargestPositive;
+    static const Decimal128 kSmallestPositive;
+    static const Decimal128 kLargestNegative;
+    static const Decimal128 kSmallestNegative;
+
+    static const Decimal128 kPositiveInfinity;
+    static const Decimal128 kNegativeInfinity;
+    static const Decimal128 kPositiveNaN;
+    static const Decimal128 kNegativeNaN;
+
+    /**
      * This struct holds the raw data for IEEE 754-2008 data types
      */
     struct Decimal128Value {
+// Determine system's endian ordering in order to construct decimal 128 values directly
+#if MONGO_CONFIG_BYTE_ORDER == 1234
+        static const int HIGH_64 = 1;
+        static const int LOW_64 = 0;
+#else
+        static const int HIGH_64 = 0;
+        static const int LOW_64 = 1;
+#endif
+
         uint64_t high64;
         uint64_t low64;
 
@@ -55,9 +82,10 @@ public:
          * Constructors for Decimal128Value
          * Default to zero, copy constructor, and from size 2 uint64_t array
          */
-        Decimal128Value();
-        Decimal128Value(const Decimal128Value& dval);
-        Decimal128Value(const uint64_t dval[2]);
+        Decimal128Value() = default;
+        Decimal128Value(const Decimal128Value& dval) = default;
+        Decimal128Value(const uint64_t dval[2]) : high64(dval[HIGH_64]), low64(dval[LOW_64]) {}
+        Decimal128Value(const uint64_t low, const uint64_t high) : high64(high), low64(low) {}
     };
 
     enum RoundingMode {
@@ -71,14 +99,18 @@ public:
     /**
      * Default initialize Decimal128's value struct to zero
      */
-    Decimal128();
-
+    Decimal128() = default;
     /**
      * This constructor takes in a raw decimal128 type, which consists of two
      * uint64_t's. This class performs an endian check on the system to ensure
      * that the Decimal128Value.high64 represents the higher 64 bits.
      */
-    Decimal128(Decimal128Value dec128Value);
+    Decimal128(Decimal128::Decimal128Value dec128Value) : _value(dec128Value) {}
+
+    /**
+     * This constructor is an interface for creating static constants
+     */
+    Decimal128(const uint64_t dval[2]) : _value(dval) {}
     Decimal128(int32_t int32Value);
     Decimal128(int64_t int64Value);
 
@@ -105,15 +137,17 @@ public:
      * "-200E9999999999" --> -Inf
      */
     Decimal128(std::string stringValue, RoundingMode roundMode = kRoundTiesToEven);
-    ~Decimal128();
 
     /**
-     * These functions get the inner Decimal128Value struct storing the
-     * decimal128 value, which is useful for direct manipulation and testing.
+     * These functions get the inner Decimal128Value struct storing the decimal128 value.
      * Const cast away for the mutable version of the function.
      */
     const Decimal128Value& getValue() const;
-    Decimal128Value& getValue();
+
+    /**
+     * This function returns the decimal absolute value of the caller
+     */
+    Decimal128 toAbs() const;
 
     /**
      * This set of functions converts a Decimal128 to a certain numeric type with a
@@ -142,10 +176,10 @@ public:
     /**
      * This set of functions check whether a Decimal128 is Zero, NaN, or +/- Inf
      */
-    bool isZero();
-    bool isNaN();
-    bool isInfinite();
-    bool isNegative();
+    bool isZero() const;
+    bool isNaN() const;
+    bool isInfinite() const;
+    bool isNegative() const;
 
     /**
      * This set of mathematical operation functions implement the corresponding
@@ -178,28 +212,20 @@ public:
     bool isLess(const Decimal128& other);
     bool isLessEqual(const Decimal128& other);
 
-    /**
-     * These functions get the minimum and maximum valid Decimal128s
-     * getPosMin() -> 1E-6176
-     * getPosMax() -> 9999999999999999999999999999999999E6111
-     * getNegMin() -> -9999999999999999999999999999999999E6111
-     * getNegMax() -> -1E-6176
-     */
-    static Decimal128 getPosMin();
-    static Decimal128 getPosMax();
-    static Decimal128 getNegMin();
-    static Decimal128 getNegMax();
-    /**
-     * These functions get special values (+/- Inf, +/- NaN) represented in Decimal128, which
-     * is very useful for testing and other numerical comparisons
-     */
-    static Decimal128 getPosInfinity();
-    static Decimal128 getNegInfinity();
-    static Decimal128 getPosNaN();
-    static Decimal128 getNegNaN();
-
 private:
     Decimal128Value _value;
+
+    /**
+     * The following static const variables are used to mathematically produce
+     * special Decimal128 numbers.
+     */
+    static const uint64_t _t17;
+    static const uint64_t _t17lo32;
+    static const uint64_t _t17hi32;
+    static const uint64_t _t34lo64;
+    static const uint64_t _t34hi64;
+    static const uint64_t _maxBiasedExp;
+    static const uint64_t _negativeSignBit;
 };
 
 }  // namespace mongo

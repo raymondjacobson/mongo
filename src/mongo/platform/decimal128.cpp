@@ -26,7 +26,6 @@
  */
 
 #include "mongo/platform/basic.h"
-
 #include "mongo/platform/decimal128.h"
 
 #include <cmath>
@@ -36,19 +35,9 @@
 #include <utility>
 
 #include "mongo/config.h"
-#include "mongo/platform/endian.h"
 #include "mongo/util/assert_util.h"
 
 namespace mongo {
-// Determine system's endian ordering in order to construct decimal
-// 128 values directly (inexpensively)
-#if MONGO_CONFIG_BYTE_ORDER == 1234
-int HIGH_64 = 1;
-int LOW_64 = 0;
-#else
-int HIGH_64 = 0;
-int LOW_64 = 1;
-#endif
 
 /**
  * This helper function creates a library specific type for the
@@ -56,8 +45,8 @@ int LOW_64 = 1;
  */
 BID_UINT128 decimal128ToLibraryType(Decimal128::Decimal128Value value) {
     BID_UINT128 dec128;
-    dec128.w[LOW_64] = value.low64;
-    dec128.w[HIGH_64] = value.high64;
+    dec128.w[Decimal128::Decimal128Value::LOW_64] = value.low64;
+    dec128.w[Decimal128::Decimal128Value::HIGH_64] = value.high64;
     return dec128;
 }
 
@@ -76,8 +65,8 @@ BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
     BID_UINT128 quantizerReference;
 
     // The quantizer starts at 1E-15
-    quantizerReference.w[HIGH_64] = 0x3022000000000000;
-    quantizerReference.w[LOW_64] = 0x0000000000000001;
+    quantizerReference.w[Decimal128::Decimal128Value::HIGH_64] = 0x3022000000000000;
+    quantizerReference.w[Decimal128::Decimal128Value::LOW_64] = 0x0000000000000001;
 
     // Scale the quantizer by the base 10 exponent. This is necessary to keep
     // the scale of the quantizer reference correct. For example, the decimal value 101
@@ -90,17 +79,6 @@ BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
     return value;
 }
 
-Decimal128::Decimal128Value::Decimal128Value() : high64(0), low64(0) {}
-
-Decimal128::Decimal128Value::Decimal128Value(const Decimal128Value& dval)
-    : high64(dval.high64), low64(dval.low64) {}
-
-Decimal128::Decimal128Value::Decimal128Value(const uint64_t dval[2])
-    : high64(dval[HIGH_64]), low64(dval[LOW_64]) {}
-
-Decimal128::Decimal128() : _value() {}
-
-Decimal128::Decimal128(Decimal128::Decimal128Value dec128Value) : _value(dec128Value) {}
 
 Decimal128::Decimal128(int32_t int32Value)
     : _value(Decimal128Value(bid128_from_int32(int32Value).w)) {}
@@ -113,7 +91,7 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     uint32_t idec_signaling_flags = 0;
     convertedDoubleValue = binary64_to_bid128(doubleValue, roundMode, &idec_signaling_flags);
 
-    // If the original number was zero, there's no need to quantize
+    // If the original number was zero, infinity, or NaN, there's no need to quantize
     if (doubleValue == 0.0 || std::isinf(doubleValue) || std::isnan(doubleValue)) {
         _value = Decimal128Value(convertedDoubleValue.w);
         return;
@@ -225,15 +203,14 @@ Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
     _value = Decimal128Value(dec128.w);
 }
 
-Decimal128::~Decimal128() {}
-
 const Decimal128::Decimal128Value& Decimal128::getValue() const {
     return _value;
 }
 
-Decimal128::Decimal128Value& Decimal128::getValue() {
-    return const_cast<Decimal128::Decimal128Value&>(
-        static_cast<const Decimal128::Decimal128&>(*this).getValue());
+Decimal128 Decimal128::toAbs() const {
+    BID_UINT128 dec128 = decimal128ToLibraryType(_value);
+    dec128 = bid128_abs(dec128);
+    return Decimal128(dec128.w);
 }
 
 int32_t Decimal128::toInt(RoundingMode roundMode) {
@@ -345,19 +322,19 @@ std::pair<double, bool> Decimal128::isAndToDouble(RoundingMode roundMode) {
                                    idec_signaling_flags == 0);
 }
 
-bool Decimal128::isZero() {
+bool Decimal128::isZero() const {
     return bid128_isZero(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isNaN() {
+bool Decimal128::isNaN() const {
     return bid128_isNaN(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isInfinite() {
+bool Decimal128::isInfinite() const {
     return bid128_isInf(decimal128ToLibraryType(_value));
 }
 
-bool Decimal128::isNegative() {
+bool Decimal128::isNegative() const {
     return bid128_isSigned(decimal128ToLibraryType(_value));
 }
 
@@ -406,9 +383,7 @@ Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundM
     BID_UINT128 q = decimal128ToLibraryType(reference.getValue());
     uint32_t idec_signaling_flags = 0;
     BID_UINT128 quantizedResult = bid128_quantize(current, q, roundMode, &idec_signaling_flags);
-    Decimal128::Decimal128Value value;
-    value.low64 = quantizedResult.w[LOW_64];
-    value.high64 = quantizedResult.w[HIGH_64];
+    Decimal128::Decimal128Value value(quantizedResult.w);
     Decimal128 result(value);
     return result;
 }
@@ -455,68 +430,26 @@ bool Decimal128::isLessEqual(const Decimal128& other) {
     return bid128_quiet_less_equal(current, compare, &idec_signaling_flags);
 }
 
-Decimal128 Decimal128::getPosMin() {
-    uint64_t val[2];
-    val[HIGH_64] = 0ull;
-    val[LOW_64] = 1ull;
-    Decimal128 min((Decimal128Value::Decimal128Value(val)));
-    return min;
-}
+const uint64_t Decimal128::_t17 = 100ull * 1000 * 1000 * 1000 * 1000 * 1000;
+const uint64_t Decimal128::_t17lo32 = _t17 % (1ull << 32);
+const uint64_t Decimal128::_t17hi32 = _t17 >> 32;
+const uint64_t Decimal128::_t34lo64 = _t17 * _t17 - 1;
+const uint64_t Decimal128::_t34hi64 = _t17hi32 * _t17hi32 + (((_t17hi32 * _t17lo32) >> 31));
+const uint64_t Decimal128::_maxBiasedExp = 6143 + 6144;
+const uint64_t Decimal128::_negativeSignBit = 1ull << 63;
 
-Decimal128 Decimal128::getPosMax() {
-    uint64_t val[2];
-    val[HIGH_64] = 6917508178773903296ull;
-    val[LOW_64] = 4003012203950112767ull;
-    Decimal128 max((Decimal128Value::Decimal128Value(val)));
-    return max;
-}
-
-Decimal128 Decimal128::getNegMin() {
-    uint64_t val[2];
-    val[HIGH_64] = 16140880215628679104ull;
-    val[LOW_64] = 4003012203950112767ull;
-    Decimal128 min((Decimal128Value::Decimal128Value(val)));
-    return min;
-}
-
-Decimal128 Decimal128::getNegMax() {
-    uint64_t val[2];
-    val[HIGH_64] = 9223372036854775808ull;
-    val[LOW_64] = 1ull;
-    Decimal128 max((Decimal128Value::Decimal128Value(val)));
-    return max;
-}
-
-Decimal128 Decimal128::getPosInfinity() {
-    uint64_t val[2];
-    val[HIGH_64] = 8646911284551352320ull;
-    val[LOW_64] = 0ull;
-    Decimal128 posInf((Decimal128Value::Decimal128Value(val)));
-    return posInf;
-}
-
-Decimal128 Decimal128::getNegInfinity() {
-    uint64_t val[2];
-    val[HIGH_64] = 17870283321406128128ull;
-    val[LOW_64] = 0ull;
-    Decimal128 negInf((Decimal128Value::Decimal128Value(val)));
-    return negInf;
-}
-
-Decimal128 Decimal128::getPosNaN() {
-    uint64_t val[2];
-    val[HIGH_64] = 8935141660703064064ull;
-    val[LOW_64] = 0ull;
-    Decimal128 posNaN((Decimal128Value::Decimal128Value(val)));
-    return posNaN;
-}
-
-Decimal128 Decimal128::getNegNaN() {
-    uint64_t val[2];
-    val[HIGH_64] = 18158513697557839872ull;
-    val[LOW_64] = 0ull;
-    Decimal128 negNaN((Decimal128Value::Decimal128Value(val)));
-    return negNaN;
-}
+const Decimal128 Decimal128::kLargestPositive(
+    Decimal128::Decimal128Value(_t34lo64, (_maxBiasedExp << 49) + _t34hi64));
+const Decimal128 Decimal128::kSmallestPositive(Decimal128::Decimal128Value(1ull, 0ull));
+const Decimal128 Decimal128::kLargestNegative(
+    Decimal128::Decimal128Value(_t34lo64, (_maxBiasedExp << 49) + _t34hi64 + _negativeSignBit));
+const Decimal128 Decimal128::kSmallestNegative(
+    Decimal128::Decimal128Value(1ull, 0ull + _negativeSignBit));
+const Decimal128 Decimal128::kPositiveInfinity(Decimal128::Decimal128Value(0ull, 0x78ull << 56));
+const Decimal128 Decimal128::kNegativeInfinity(
+    Decimal128::Decimal128Value(0ull, (0x78ull << 56) + _negativeSignBit));
+const Decimal128 Decimal128::kPositiveNaN(Decimal128::Decimal128Value(0ull, 0x7cull << 56));
+const Decimal128 Decimal128::kNegativeNaN(
+    Decimal128::Decimal128Value(0ull, (0x7cull << 56) + _negativeSignBit));
 
 }  // namespace mongo

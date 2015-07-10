@@ -239,7 +239,7 @@ public:
 
     /** Append a NumberDecimal */
     BSONObjBuilder& append(StringData fieldName, Decimal128 n) {
-        _b.appendNum((char)NumberDecimal);
+        _b.appendNum(static_cast<char>(NumberDecimal));
         _b.appendStr(fieldName);
         _b.appendNum(n);
         return *this;
@@ -288,8 +288,7 @@ public:
     }
 
     BSONObjBuilder& appendNumber(StringData fieldName, Decimal128 decNumber) {
-        append(fieldName, decNumber);
-        return *this;
+        return append(fieldName, decNumber);
     }
 
     BSONObjBuilder& appendNumber(StringData fieldName, long long llNumber) {
