@@ -221,8 +221,8 @@ public:
         appendNumImpl(j);
     }
     void appendNum(Decimal128 j) {
-        BOOST_STATIC_ASSERT(sizeof(Decimal128) == 16);
-        appendNumImpl(j);
+        BOOST_STATIC_ASSERT(sizeof(Decimal128::Decimal128Value) == 16);
+        appendNumImpl(j.getValue());
     }
 
     void appendBuf(const void* src, size_t len) {

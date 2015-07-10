@@ -220,7 +220,7 @@ Status validateElementInfo(Buffer* buffer, ValidationState::State* nextState, BS
             return Status::OK();
 
         case NumberDecimal:
-            if (!buffer->skip(sizeof(int64_t) * 2))
+            if (!buffer->skip(sizeof(Decimal128::Decimal128Value)))
                 return makeError("Invalid bson", idElem);
             return Status::OK();
 

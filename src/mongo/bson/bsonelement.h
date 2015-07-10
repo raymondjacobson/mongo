@@ -40,6 +40,7 @@
 #include "mongo/bson/bsontypes.h"
 #include "mongo/bson/oid.h"
 #include "mongo/bson/timestamp.h"
+#include "mongo/platform/decimal128.h"
 
 namespace mongo {
 class BSONObj;
@@ -296,7 +297,8 @@ public:
 
     /** Return decimal128 value for this field. MUST be NumberDecimal type. */
     Decimal128 _numberDecimal() const {
-        return ConstDataView(value()).read<LittleEndian<class Decimal128>>();
+        return Decimal128(
+            ConstDataView(value()).read<LittleEndian<struct Decimal128::Decimal128Value>>());
     }
 
     /** Return long long value for this field. MUST be NumberLong type. */
@@ -769,6 +771,7 @@ inline long long BSONElement::safeNumberLong() const {
             if (d < std::numeric_limits<long long>::min()) {
                 return std::numeric_limits<long long>::min();
             }
+            return numberLong();
         }
         case NumberDecimal: {
             Decimal128 d = numberDecimal();
@@ -781,6 +784,7 @@ inline long long BSONElement::safeNumberLong() const {
             if (d.isLess(Decimal128(std::numeric_limits<long long>::min()))) {
                 return std::numeric_limits<long long>::min();
             }
+            return numberLong();
         }
         default:
             return numberLong();

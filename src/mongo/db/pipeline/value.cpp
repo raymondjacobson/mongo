@@ -257,7 +257,7 @@ Decimal128 Value::getDecimal() const {
         return Decimal128(_storage.longValue);
     if (type == NumberDouble)
         return Decimal128(_storage.doubleValue);
-    verify(type == NumberDecimal);
+    invariant(type == NumberDecimal);
     return _storage.getDecimal();
 }
 
@@ -820,12 +820,18 @@ void Value::hash_combine(size_t& seed) const {
         // NumberLongs > 2**53, but that is ok since the hash will still be the same for
         // equal numbers and is still likely to be different for different numbers.
         // SERVER-16851
-        // TODO: Addition of Decimal128 also converts to NumberDouble. This is
-        // functionally correct, but doesn't make use of the fact that some different
-        // dec128 values will have the same hash (the same doubles will represent them).
-        // Another idea would be to cast all types to decimal128 (solving the NumberLong issue
-        // as a side effect), but that would be slow.
-        case NumberDecimal:
+        case mongo::NumberDecimal: {
+            const Decimal128 dcml = elem.numberDecimal();
+            if (dcml.toAbs().isGreater(Decimal128(std::numeric_limits<double>::max())) &&
+                !dcml.isInfinite() && !dcml.isNaN()) {
+                boost::hash_combine(hash, dcml.getValue().low64);
+                boost::hash_combine(hash, dcml.getValue().high64);
+                break;
+            }
+            // Else, fall through and convert the decimal to a double and hash.
+            // At this point the decimal fits into the range of doubles, is infinity, or is NaN,
+            // which doubles have a cheaper representation for.
+        }
         case NumberDouble:
         case NumberLong:
         case NumberInt: {
@@ -1003,12 +1009,14 @@ size_t Value::getApproximateSize() const {
         case DBRef:
             return sizeof(Value) + sizeof(RCDBRef) + _storage.getDBRef()->ns.size();
 
+        case NumberDecimal:
+            return sizeof(RCDecimal);
+
         // These types are always contained within the Value
         case EOO:
         case MinKey:
         case MaxKey:
         case NumberDouble:
-        case NumberDecimal:
         case jstOID:
         case Bool:
         case Date:
@@ -1206,7 +1214,7 @@ Value Value::deserializeForSorter(BufReader& buf, const SorterDeserializeSetting
         case NumberDouble:
             return Value(buf.read<double>());
         case NumberDecimal:
-            return Value(buf.read<Decimal128>());
+            return Value(buf.read<struct Decimal128::Decimal128Value>());
         case Bool:
             return Value(bool(buf.read<char>()));
         case Date:

@@ -1051,7 +1051,18 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
             boost::hash_combine(hash, elem.date().asInt64());
             break;
 
-        case mongo::NumberDecimal:
+        case mongo::NumberDecimal: {
+            const Decimal128 dcml = elem.numberDecimal();
+            if (dcml.toAbs().isGreater(Decimal128(std::numeric_limits<double>::max())) &&
+                !dcml.isInfinite() && !dcml.isNaN()) {
+                boost::hash_combine(hash, dcml.getValue().low64);
+                boost::hash_combine(hash, dcml.getValue().high64);
+                break;
+            }
+            // Else, fall through and convert the decimal to a double and hash.
+            // At this point the decimal fits into the range of doubles, is infinity, or is NaN,
+            // which doubles have a cheaper representation for.
+        }
         case mongo::NumberDouble:
         case mongo::NumberLong:
         case mongo::NumberInt: {

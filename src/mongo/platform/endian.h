@@ -418,34 +418,30 @@ struct ByteOrderConverter<double> {
 };
 
 template <>
-struct ByteOrderConverter<Decimal128> {
-    typedef Decimal128 T;
+struct ByteOrderConverter<Decimal128::Decimal128Value> {
+    typedef Decimal128::Decimal128Value T;
 
     inline static T nativeToBig(T t) {
-        Decimal128::Decimal128Value decimalValue = t.getValue();
-        ByteOrderConverter<uint64_t>::nativeToBig(decimalValue.low64);
-        ByteOrderConverter<uint64_t>::nativeToBig(decimalValue.high64);
+        ByteOrderConverter<uint64_t>::nativeToBig(t.low64);
+        ByteOrderConverter<uint64_t>::nativeToBig(t.high64);
         return t;
     }
 
     inline static T bigToNative(T t) {
-        Decimal128::Decimal128Value decimalValue = t.getValue();
-        ByteOrderConverter<uint64_t>::bigToNative(decimalValue.low64);
-        ByteOrderConverter<uint64_t>::bigToNative(decimalValue.high64);
+        ByteOrderConverter<uint64_t>::bigToNative(t.low64);
+        ByteOrderConverter<uint64_t>::bigToNative(t.high64);
         return t;
     }
 
     inline static T nativeToLittle(T t) {
-        Decimal128::Decimal128Value decimalValue = t.getValue();
-        ByteOrderConverter<uint64_t>::nativeToLittle(decimalValue.low64);
-        ByteOrderConverter<uint64_t>::nativeToLittle(decimalValue.high64);
+        ByteOrderConverter<uint64_t>::nativeToLittle(t.low64);
+        ByteOrderConverter<uint64_t>::nativeToLittle(t.high64);
         return t;
     }
 
     inline static T littleToNative(T t) {
-        Decimal128::Decimal128Value decimalValue = t.getValue();
-        ByteOrderConverter<uint64_t>::littleToNative(decimalValue.low64);
-        ByteOrderConverter<uint64_t>::littleToNative(decimalValue.high64);
+        ByteOrderConverter<uint64_t>::littleToNative(t.low64);
+        ByteOrderConverter<uint64_t>::littleToNative(t.high64);
         return t;
     }
 };
