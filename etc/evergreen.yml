@@ -1563,9 +1563,9 @@ buildvariants:
   - name: sharding_jscore_passthrough_WT
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: linux-64-debug
   display_name: Linux 64-bit DEBUG
@@ -1827,9 +1827,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: ubuntu1404
   display_name: SSL Ubuntu 1404 64-bit
@@ -1919,9 +1919,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: enterprise-linux-64-amazon-ami
   display_name: Enterprise Linux 64-bit Amazon AMI
@@ -1973,9 +1973,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: amazon
   display_name: SSL Amazon 64-bit
@@ -2063,9 +2063,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: linux-32
   display_name: Linux 32-bit
@@ -2101,9 +2101,9 @@ buildvariants:
   - name: replication
   - name: sharding
   - name: tool
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: linux-32-debug
   display_name: Linux 32-bit DEBUG
@@ -2225,9 +2225,9 @@ buildvariants:
   - name: sharding_jscore_passthrough_WT
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: windows-64-2k8
   display_name: Windows 64-bit 2008R2+
@@ -2297,9 +2297,9 @@ buildvariants:
   - name: sharding_jscore_passthrough_WT
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: windows-64-2k8-debug
   display_name: Windows 64-bit 2008R2+ DEBUG
@@ -2401,9 +2401,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: windows-64-2k8-ssl
   display_name: SSL Windows 64-bit 2008R2+
@@ -2476,9 +2476,9 @@ buildvariants:
   - name: tool_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: windows-32
   display_name: Windows 32-bit
@@ -2518,9 +2518,9 @@ buildvariants:
   - name: replication
   - name: sharding
   - name: tool
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #             OSX buildvariants           #
@@ -2599,9 +2599,9 @@ buildvariants:
   - name: sharding_jscore_passthrough_WT
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: osx-108-ssl
   display_name: SSL OS X 10.8
@@ -2679,9 +2679,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: osx-108-debug
   display_name: OS X 10.8 DEBUG
@@ -2765,9 +2765,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: enterprise-rhel-62-64-bit
   display_name: Enterprise RHEL 6.2 64-bit
@@ -2806,9 +2806,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: enterprise-rhel-70-64-bit
   display_name: Enterprise RHEL 7.0 64-bit
@@ -2842,9 +2842,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: rhel55
   display_name: SSL RHEL 5.5 64-bit
@@ -2935,9 +2935,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: rhel62
   display_name: SSL RHEL 6.2 64-bit
@@ -3026,9 +3026,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: rhel70
   display_name: SSL RHEL 7.0 64-bit
@@ -3117,9 +3117,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          Ubuntu buildvariants           #
@@ -3159,9 +3159,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: enterprise-ubuntu1404-64
   display_name: Enterprise Ubuntu 1404 64-bit
@@ -3197,9 +3197,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          SUSE buildvariants             #
@@ -3239,9 +3239,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: suse11
   display_name: SSL SUSE 11 64-bit
@@ -3331,9 +3331,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          Solaris buildvariants          #
@@ -3401,9 +3401,9 @@ buildvariants:
   - name: slow2_WT
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ###########################################
 #          Debian buildvariants           #
@@ -3443,9 +3443,9 @@ buildvariants:
   - name: snmp_WT
   - name: ssl
   - name: sslSpecial
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 - name: debian71
   display_name: SSL Debian 7.1 64-bit
@@ -3535,9 +3535,9 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
 
 ##############################################
 # mongo-partner storage engine buildvariants #
@@ -3769,6 +3769,6 @@ buildvariants:
   - name: sslSpecial
   - name: tool
   - name: tool_WT
-  - name: push
-    distros:
-    - rhel55-test
+  # - name: push
+  #   distros:
+  #   - rhel55-test
