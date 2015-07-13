@@ -51,11 +51,14 @@ public:
      * kSmallestPositive -> 1E-6176
      * kLargestNegative -> -9999999999999999999999999999999999E6111
      * kSmallestNegative -> -1E-6176
+     * kLargestNegativeExponentZero -> 0E-6176
      */
     static const Decimal128 kLargestPositive;
     static const Decimal128 kSmallestPositive;
     static const Decimal128 kLargestNegative;
     static const Decimal128 kSmallestNegative;
+
+    static const Decimal128 kLargestNegativeExponentZero;
 
     static const Decimal128 kPositiveInfinity;
     static const Decimal128 kNegativeInfinity;
@@ -142,7 +145,7 @@ public:
      * These functions get the inner Decimal128Value struct storing the decimal128 value.
      * Const cast away for the mutable version of the function.
      */
-    const Decimal128Value& getValue() const;
+    Decimal128Value getValue() const;
 
     /**
      * This function returns the decimal absolute value of the caller
@@ -189,15 +192,22 @@ public:
      * is performed using the supplied rounding mode (defaulting to kRoundTiesToEven).
      * NaNs and infinities are handled according to the IEEE 754-2008 specification.
      */
-    Decimal128 add(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 subtract(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 multiply(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
-    Decimal128 divide(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 add(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven) const;
+    Decimal128 subtract(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven) const;
+    Decimal128 multiply(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven) const;
+    Decimal128 divide(const Decimal128& other, RoundingMode roundMode = kRoundTiesToEven) const;
 
     /**
      * This function quantizes the current decimal given a quantum reference
      */
-    Decimal128 quantize(const Decimal128& reference, RoundingMode roundMode = kRoundTiesToEven);
+    Decimal128 quantize(const Decimal128& reference,
+                        RoundingMode roundMode = kRoundTiesToEven) const;
+    /**
+     * This function normalizes the cohort of a Decimal128 type by adding the zero
+     * representation 0E-6176 (the largest negative exponent) to the caller.
+     * This works by forcing the decimal to the maximum 34 digits of precision.
+     */
+    Decimal128 normalize() const;
 
     /**
      * This set of comparison operations takes a single Decimal128 and returns a boolean
@@ -214,18 +224,6 @@ public:
 
 private:
     Decimal128Value _value;
-
-    /**
-     * The following static const variables are used to mathematically produce
-     * special Decimal128 numbers.
-     */
-    static const uint64_t _t17;
-    static const uint64_t _t17lo32;
-    static const uint64_t _t17hi32;
-    static const uint64_t _t34lo64;
-    static const uint64_t _t34hi64;
-    static const uint64_t _maxBiasedExp;
-    static const uint64_t _negativeSignBit;
 };
 
 }  // namespace mongo

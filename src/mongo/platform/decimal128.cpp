@@ -203,7 +203,7 @@ Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
     _value = Decimal128Value(dec128.w);
 }
 
-const Decimal128::Decimal128Value& Decimal128::getValue() const {
+Decimal128::Decimal128Value Decimal128::getValue() const {
     return _value;
 }
 
@@ -338,7 +338,7 @@ bool Decimal128::isNegative() const {
     return bid128_isSigned(decimal128ToLibraryType(_value));
 }
 
-Decimal128 Decimal128::add(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::add(const Decimal128& other, RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 addend = decimal128ToLibraryType(other.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -348,7 +348,7 @@ Decimal128 Decimal128::add(const Decimal128& other, RoundingMode roundMode) {
     return result;
 }
 
-Decimal128 Decimal128::subtract(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::subtract(const Decimal128& other, RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 sub = decimal128ToLibraryType(other.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -358,7 +358,7 @@ Decimal128 Decimal128::subtract(const Decimal128& other, RoundingMode roundMode)
     return result;
 }
 
-Decimal128 Decimal128::multiply(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::multiply(const Decimal128& other, RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 factor = decimal128ToLibraryType(other.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -368,7 +368,7 @@ Decimal128 Decimal128::multiply(const Decimal128& other, RoundingMode roundMode)
     return result;
 }
 
-Decimal128 Decimal128::divide(const Decimal128& other, RoundingMode roundMode) {
+Decimal128 Decimal128::divide(const Decimal128& other, RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 divisor = decimal128ToLibraryType(other.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -378,7 +378,7 @@ Decimal128 Decimal128::divide(const Decimal128& other, RoundingMode roundMode) {
     return result;
 }
 
-Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundMode) {
+Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundMode) const {
     BID_UINT128 current = decimal128ToLibraryType(_value);
     BID_UINT128 q = decimal128ToLibraryType(reference.getValue());
     uint32_t idec_signaling_flags = 0;
@@ -386,6 +386,10 @@ Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundM
     Decimal128::Decimal128Value value(quantizedResult.w);
     Decimal128 result(value);
     return result;
+}
+
+Decimal128 Decimal128::normalize() const {
+    return add(kLargestNegativeExponentZero);
 }
 
 bool Decimal128::isEqual(const Decimal128& other) {
@@ -430,26 +434,56 @@ bool Decimal128::isLessEqual(const Decimal128& other) {
     return bid128_quiet_less_equal(current, compare, &idec_signaling_flags);
 }
 
-const uint64_t Decimal128::_t17 = 100ull * 1000 * 1000 * 1000 * 1000 * 1000;
-const uint64_t Decimal128::_t17lo32 = _t17 % (1ull << 32);
-const uint64_t Decimal128::_t17hi32 = _t17 >> 32;
-const uint64_t Decimal128::_t34lo64 = _t17 * _t17 - 1;
-const uint64_t Decimal128::_t34hi64 = _t17hi32 * _t17hi32 + (((_t17hi32 * _t17lo32) >> 31));
-const uint64_t Decimal128::_maxBiasedExp = 6143 + 6144;
-const uint64_t Decimal128::_negativeSignBit = 1ull << 63;
+/**
+ * The following static const variables are used to mathematically produce
+ * frequently needed Decimal128 constants.
+ */
 
+namespace {
+// Get the representation of 1 with 17 zeros (half of decimal128's 34 digit precision)
+const uint64_t t17 = 100ull * 1000 * 1000 * 1000 * 1000 * 1000;
+// Get the low 64 bits of 34 consecutive decimal 9's
+// t17 * 17 gives 1 with 34 0's, so subtract 1 to get all 9's
+const uint64_t t34lo64 = t17 * t17 - 1;
+// Mod t17 by 2^32 to get the low 32 bits of t17's binary representation
+const uint64_t t17lo32 = t17 % (1ull << 32);
+// Divide t17 by 2^32 to get the high 32 bits of t17's binary representation
+const uint64_t t17hi32 = t17 >> 32;
+// Multiply t17 by t17 and keep the high 64 bits by distributing the operation to
+// t17hi32*t17hi32 + 2*t17hi32*t17lo32 + t17lo32*t17lo32 where the 2nd term
+// is shifted right by 32 and the 3rd term by 64 (which effectively drops the 3rd term)
+const uint64_t t34hi64 = t17hi32 * t17hi32 + (((t17hi32 * t17lo32) >> 31));
+
+// Get the max exponent for a decimal128 (including the bias)
+const uint64_t maxBiasedExp = 6143 + 6144;
+// Get the binary representation of the negative sign bit
+const uint64_t negativeSignBit = 1ull << 63;
+}  // namespace
+
+// The low bits of the largest positive number are all 9s (t34lo64) and
+// the highest are t32hi64 added to the max exponent shifted over 49.
+// The exponent is placed at 49 because 64 bits - 1 sign bit - 14 exponent bits = 49
 const Decimal128 Decimal128::kLargestPositive(
-    Decimal128::Decimal128Value(_t34lo64, (_maxBiasedExp << 49) + _t34hi64));
+    Decimal128::Decimal128Value(t34lo64, (maxBiasedExp << 49) + t34hi64));
+// The smallst positive decimal is 1 with the largest negative exponent of 0 (biased -6176)
 const Decimal128 Decimal128::kSmallestPositive(Decimal128::Decimal128Value(1ull, 0ull));
+
+// Add a sign bit to the largest and smallest positive to get their corresponding negatives
 const Decimal128 Decimal128::kLargestNegative(
-    Decimal128::Decimal128Value(_t34lo64, (_maxBiasedExp << 49) + _t34hi64 + _negativeSignBit));
-const Decimal128 Decimal128::kSmallestNegative(
-    Decimal128::Decimal128Value(1ull, 0ull + _negativeSignBit));
+    Decimal128::Decimal128Value(t34lo64, (maxBiasedExp << 49) + t34hi64 + negativeSignBit));
+const Decimal128 Decimal128::kSmallestNegative(Decimal128::Decimal128Value(1ull,
+                                                                           0ull + negativeSignBit));
+// Get the reprsentation of 0 with the largest negative exponent
+const Decimal128 Decimal128::kLargestNegativeExponentZero(Decimal128::Decimal128Value(0ull, 0ull));
+
+// Shift the format of the combination bits to the right position to get Inf and NaN
+// +Inf = 0111 1000 ... ... = 0x78 ... ...
+// +NaN = 0111 1100 ... ... = 0x7c ... ...
 const Decimal128 Decimal128::kPositiveInfinity(Decimal128::Decimal128Value(0ull, 0x78ull << 56));
 const Decimal128 Decimal128::kNegativeInfinity(
-    Decimal128::Decimal128Value(0ull, (0x78ull << 56) + _negativeSignBit));
+    Decimal128::Decimal128Value(0ull, (0x78ull << 56) + negativeSignBit));
 const Decimal128 Decimal128::kPositiveNaN(Decimal128::Decimal128Value(0ull, 0x7cull << 56));
 const Decimal128 Decimal128::kNegativeNaN(
-    Decimal128::Decimal128Value(0ull, (0x7cull << 56) + _negativeSignBit));
+    Decimal128::Decimal128Value(0ull, (0x7cull << 56) + negativeSignBit));
 
 }  // namespace mongo

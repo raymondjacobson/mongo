@@ -656,9 +656,8 @@ inline bool BSONElement::trueValue() const {
         case Undefined:
             return false;
         default:
-            ;
+            return true;
     }
-    return true;
 }
 
 /** @return true if element is of a numeric type. */

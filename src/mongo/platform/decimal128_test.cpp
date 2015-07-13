@@ -610,13 +610,31 @@ TEST(Decimal128Test, TestDecimal128DivisionCase2) {
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
 }
 
-TEST(Decimal128Test, TestDecimal128Quantizer) {
+TEST(Decimal128Test, TestDecimal128Quantize) {
     Decimal128 expected("1.00001");
     Decimal128 val("1.000008");
     Decimal128 ref("0.00001");
     Decimal128 result = val.quantize(ref);
     ASSERT_EQUALS(result.getValue().low64, expected.getValue().low64);
     ASSERT_EQUALS(result.getValue().high64, expected.getValue().high64);
+}
+
+TEST(Decimal128Test, TestDecimal128NormalizeSmallVals) {
+    Decimal128 d1("500E-2");
+    Decimal128 d2("5");
+    Decimal128 d1Norm = d1.normalize();
+    Decimal128 d2Norm = d2.normalize();
+    ASSERT_EQUALS(d1Norm.getValue().low64, d2Norm.getValue().low64);
+    ASSERT_EQUALS(d1Norm.getValue().high64, d2Norm.getValue().high64);
+}
+
+TEST(Decimal128Test, TestDecimal128NormalizeLargeVals) {
+    Decimal128 d1("5E-6174");
+    Decimal128 d2("500E-6176");
+    Decimal128 d1Norm = d1.normalize();
+    Decimal128 d2Norm = d2.normalize();
+    ASSERT_EQUALS(d1Norm.getValue().low64, d2Norm.getValue().low64);
+    ASSERT_EQUALS(d1Norm.getValue().high64, d2Norm.getValue().high64);
 }
 
 // Tests for Decimal128 comparison operations
@@ -749,8 +767,8 @@ TEST(Decimal128Test, TestDecimal128GetLargestPositive) {
 
 TEST(Decimal128Test, TestDecimal128GetSmallestPositive) {
     Decimal128 d = Decimal128::kSmallestPositive;
-    uint64_t smallestPositiveDecimalHigh64 = 0;
-    uint64_t smallestPositiveDecimalLow64 = 1;
+    uint64_t smallestPositiveDecimalHigh64 = 0ull;
+    uint64_t smallestPositiveDecimalLow64 = 1ull;
     ASSERT_EQUALS(d.getValue().high64, smallestPositiveDecimalHigh64);
     ASSERT_EQUALS(d.getValue().low64, smallestPositiveDecimalLow64);
 }
@@ -774,7 +792,7 @@ TEST(Decimal128Test, TestDecimal128GetSmallestNegative) {
 TEST(Decimal128Test, TestDecimal128GetPosInfinity) {
     Decimal128 d = Decimal128::kPositiveInfinity;
     uint64_t decimalPositiveInfinityHigh64 = 8646911284551352320ull;
-    uint64_t decimalPositiveInfinityLow64 = 0;
+    uint64_t decimalPositiveInfinityLow64 = 0ull;
     ASSERT_EQUALS(d.getValue().high64, decimalPositiveInfinityHigh64);
     ASSERT_EQUALS(d.getValue().low64, decimalPositiveInfinityLow64);
 }
@@ -782,7 +800,7 @@ TEST(Decimal128Test, TestDecimal128GetPosInfinity) {
 TEST(Decimal128Test, TestDecimal128GetNegInfinity) {
     Decimal128 d = Decimal128::kNegativeInfinity;
     uint64_t decimalNegativeInfinityHigh64 = 17870283321406128128ull;
-    uint64_t decimalNegativeInfinityLow64 = 0;
+    uint64_t decimalNegativeInfinityLow64 = 0ull;
     ASSERT_EQUALS(d.getValue().high64, decimalNegativeInfinityHigh64);
     ASSERT_EQUALS(d.getValue().low64, decimalNegativeInfinityLow64);
 }
@@ -790,7 +808,7 @@ TEST(Decimal128Test, TestDecimal128GetNegInfinity) {
 TEST(Decimal128Test, TestDecimal128GetPosNaN) {
     Decimal128 d = Decimal128::kPositiveNaN;
     uint64_t decimalPositiveNaNHigh64 = 8935141660703064064ull;
-    uint64_t decimalPositiveNaNLow64 = 0;
+    uint64_t decimalPositiveNaNLow64 = 0ull;
     ASSERT_EQUALS(d.getValue().high64, decimalPositiveNaNHigh64);
     ASSERT_EQUALS(d.getValue().low64, decimalPositiveNaNLow64);
 }
@@ -798,9 +816,17 @@ TEST(Decimal128Test, TestDecimal128GetPosNaN) {
 TEST(Decimal128Test, TestDecimal128GetNegNaN) {
     Decimal128 d = Decimal128::kNegativeNaN;
     uint64_t decimalNegativeNaNHigh64 = 18158513697557839872ull;
-    uint64_t decimalNegativeNaNLow64 = 0;
+    uint64_t decimalNegativeNaNLow64 = 0ull;
     ASSERT_EQUALS(d.getValue().high64, decimalNegativeNaNHigh64);
     ASSERT_EQUALS(d.getValue().low64, decimalNegativeNaNLow64);
+}
+
+TEST(Decimal128Test, TestDecimal128GetLargestNegativeExponentZero) {
+    Decimal128 d = Decimal128::kLargestNegativeExponentZero;
+    uint64_t largestNegativeExponentZeroHigh64 = 0ull;
+    uint64_t largestNegativeExponentZeroLow64 = 0ull;
+    ASSERT_EQUALS(d.getValue().high64, largestNegativeExponentZeroHigh64);
+    ASSERT_EQUALS(d.getValue().low64, largestNegativeExponentZeroLow64);
 }
 
 }  // namespace mongo
