@@ -1055,8 +1055,11 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
             const Decimal128 dcml = elem.numberDecimal();
             if (dcml.toAbs().isGreater(Decimal128(std::numeric_limits<double>::max())) &&
                 !dcml.isInfinite() && !dcml.isNaN()) {
-                boost::hash_combine(hash, dcml.getValue().low64);
-                boost::hash_combine(hash, dcml.getValue().high64);
+                // Multiply our decimal value by 0E-6176 to force equivalent decimal
+                // values in the same cohort to hash to the same value
+                Decimal128 dcmlNorm(dcml.normalize());
+                boost::hash_combine(hash, dcmlNorm.getValue().low64);
+                boost::hash_combine(hash, dcmlNorm.getValue().high64);
                 break;
             }
             // Else, fall through and convert the decimal to a double and hash.
@@ -1067,8 +1070,9 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
         case mongo::NumberLong:
         case mongo::NumberInt: {
             // This converts all numbers to doubles, which ignores the low-order bits of
-            // NumberLongs > 2**53, but that is ok since the hash will still be the same for
-            // equal numbers and is still likely to be different for different numbers.
+            // NumberLongs > 2**53 and precise decimal numbers without double representations,
+            // but that is ok since the hash will still be the same for equal numbers and is
+            // still likely to be different for different numbers.
             // SERVER-16851
             const double dbl = elem.numberDouble();
             if (std::isnan(dbl)) {
