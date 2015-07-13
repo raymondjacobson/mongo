@@ -290,26 +290,38 @@ double Decimal128::toDouble(RoundingMode roundMode) {
 
 std::string Decimal128::toString() const {
     BID_UINT128 dec128 = decimal128ToLibraryType(_value);
-    std::unique_ptr<char[]> c(
-        new char[1 /* mantissa sign */ + 34 /* mantissa */ + 1 /* scientific E */ +
-                 1 /* exponent sign */ + 4 /* exponent */ + 1 /* null terminator */]);
+    char decimalCharRepresentation[1 /* mantissa sign */ + 34 /* mantissa */ +
+                                   1 /* scientific E */ + 1 /* exponent sign */ + 4 /* exponent */ +
+                                   1 /* null terminator */];
     uint32_t idec_signaling_flags = 0;
-    bid128_to_string(c.get(), dec128, &idec_signaling_flags);
+    /**
+     * Use the library's defined to_string method, which returns a string composed of a
+     * sign ('+' or '-')
+     * 1 to 34 decimal digits (no leading zeros)
+     * the character 'E'
+     * sign ('+' or '-')
+     * 1 to 4 decimal digits (no leading zeros)
+     * For example: +10522E-3
+     */
+    bid128_to_string(decimalCharRepresentation, dec128, &idec_signaling_flags);
 
-    std::string dec128String = c.get();
-    int precision = 0;
-    int exponent = 0;
-    int stringReadPosition = 0;
+    std::string dec128String = decimalCharRepresentation;
 
-    // Deal with a NaN and Infinity
+    // If the string is NaN or Infinity, return either NaN, +Inf, or -Inf
     std::string::size_type ePos = dec128String.find("E");
     if (ePos == std::string::npos) {
         if (dec128String == "-NaN" || dec128String == "+NaN")
             return "NaN";
         if (dec128String[0] == '+')
             return "Inf";
+        invariant(dec128String == "-Inf");
         return dec128String;
     }
+
+    // Calculate the precision and exponent of the number and output it in a readable manner
+    int precision = 0;
+    int exponent = 0;
+    int stringReadPosition = 0;
 
     std::string exponentString = dec128String.substr(ePos);
 
@@ -332,7 +344,10 @@ std::string Decimal128::toString() const {
 
     int scientificExponent = precision - 1 + exponent;
 
-    if (scientificExponent >= 12 || scientificExponent <= -4) {
+    // If the number is significantly large, small, or the user has specified an exponent
+    // such that converting to string would need to append trailing zeros, display the
+    // number in scientific notation
+    if (scientificExponent >= 12 || scientificExponent <= -4 || exponent > 0) {
         // Output in scientific format
         result += dec128String.substr(stringReadPosition, 1);
         stringReadPosition++;
@@ -346,7 +361,7 @@ std::string Decimal128::toString() const {
             result += "+";
         result += std::to_string(scientificExponent);
     } else {
-        // Regular format with no decimal palce
+        // Regular format with no decimal place
         if (exponent >= 0) {
             result += dec128String.substr(stringReadPosition, precision);
             stringReadPosition += precision;

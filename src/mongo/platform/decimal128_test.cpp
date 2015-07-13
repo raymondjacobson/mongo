@@ -424,6 +424,20 @@ TEST_F(Decimal128Test, TestDecimal128ToStringPos) {
     ASSERT_EQUALS(result, "2.087015E+284");
 }
 
+TEST_F(Decimal128Test, TestDecimal128ToStringPos2) {
+    std::string s = "10.50E3";
+    Decimal128 d(s);
+    std::string result = d.toString();
+    ASSERT_EQUALS(result, "1.050E+4");
+}
+
+TEST_F(Decimal128Test, TestDecimal128ToStringPos3) {
+    std::string s = "10.51E3";
+    Decimal128 d(s);
+    std::string result = d.toString();
+    ASSERT_EQUALS(result, "1.051E+4");
+}
+
 TEST_F(Decimal128Test, TestDecimal128ToStringNeg) {
     std::string s = "-2087.015E-281";
     Decimal128 d(s);
@@ -608,10 +622,10 @@ TEST_F(Decimal128Test, TestDecimal128ToStringPosInf) {
 }
 
 TEST_F(Decimal128Test, TestDecimal128ToStringNegInf) {
-    std::string s = "-NaN";
+    std::string s = "-Infinity";
     Decimal128 d(s);
     std::string result = d.toString();
-    ASSERT_EQUALS(result, "NaN");
+    ASSERT_EQUALS(result, "-Inf");
 }
 
 TEST_F(Decimal128Test, TestDecimal128IsAndToIntWithInt) {

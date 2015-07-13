@@ -119,8 +119,23 @@ public:
     double toDouble(RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-     * This function converts a Decimal128 to a string with syntax similar to the
-     * Decimal128 string constructor.
+     * This function converts a Decimal128 to a string with the following semantics:
+     *
+     * Suppose Decimal128 D has P significant digits and exponent Exp.
+     * Define SE to be the scientific exponent of D equal to Exp + P - 1.
+     *
+     * Define format E as normalized scientific notation (ex: 1.0522E+16)
+     * Define format F as a regular formatted number with no exponent (ex: 105.22)
+     *
+     * In order to improve decimal type readability,
+     * if SE >= 12 or SE <= -4, use format E to display D.
+     * if Exp > 0, use format E to display D because adding trailing zeros implies
+     * extra, incorrect precision
+     *
+     * Otherwise, display using F with no exponent (add leading zeros if necessary).
+     *
+     * This conversion to string is roughly based on the G C99 printf specifier and
+     * existing behavior for the double numeric type in MongoDB.
      */
     std::string toString() const;
 
