@@ -218,9 +218,11 @@ public:
     Decimal128 quantize(const Decimal128& reference,
                         RoundingMode roundMode = kRoundTiesToEven) const;
     /**
-     * This function normalizes the cohort of a Decimal128 type by adding the zero
-     * representation 0E-6176 (the largest negative exponent) to the caller.
-     * This works by forcing the decimal to the maximum 34 digits of precision.
+     * This function normalizes the cohort of a Decimal128 by forcing it to maximum
+     * precision (34 decimal digits). This normalization is important when it is desireable
+     * to force equal decimals of different representations (i.e. 5.0 and 5.00) to equal
+     * decimals with the same representation (5000000000000000000000000000000000E-33).
+     * Hashing equal decimals to equal hashes becomes possible with such normalization.
      */
     Decimal128 normalize() const;
 

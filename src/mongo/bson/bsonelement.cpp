@@ -1072,7 +1072,9 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
             // This converts all numbers to doubles, which ignores the low-order bits of
             // NumberLongs > 2**53 and precise decimal numbers without double representations,
             // but that is ok since the hash will still be the same for equal numbers and is
-            // still likely to be different for different numbers.
+            // still likely to be different for different numbers. (Note: this issue only
+            // applies for decimals when they are outside of the valid double range. See
+            // the above case.)
             // SERVER-16851
             const double dbl = elem.numberDouble();
             if (std::isnan(dbl)) {

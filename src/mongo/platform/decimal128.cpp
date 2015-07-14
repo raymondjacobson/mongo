@@ -487,6 +487,7 @@ Decimal128 Decimal128::quantize(const Decimal128& reference, RoundingMode roundM
 }
 
 Decimal128 Decimal128::normalize() const {
+    // Normalize by adding 0E-6176 which forces a decimal to maximum precision (34 digits)
     return add(kLargestNegativeExponentZero);
 }
 

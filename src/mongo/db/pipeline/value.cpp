@@ -37,6 +37,7 @@
 #include "mongo/base/compare_numbers.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/pipeline/document.h"
+#include "mongo/platform/decimal128.h"
 #include "mongo/util/hex.h"
 #include "mongo/util/mongoutils/str.h"
 
@@ -834,7 +835,9 @@ void Value::hash_combine(size_t& seed) const {
         // This converts all numbers to doubles, which ignores the low-order bits of
         // NumberLongs > 2**53 and precise decimal numbers without double representations,
         // but that is ok since the hash will still be the same for equal numbers and is
-        // still likely to be different for different numbers.
+        // still likely to be different for different numbers. (Note: this issue only
+        // applies for decimals when they are outside of the valid double range. See
+        // the above case.)
         // SERVER-16851
         case NumberDouble:
         case NumberLong:
@@ -1218,7 +1221,7 @@ Value Value::deserializeForSorter(BufReader& buf, const SorterDeserializeSetting
         case NumberDouble:
             return Value(buf.read<double>());
         case NumberDecimal:
-            return Value(buf.read<class Decimal128>());
+            return Value(buf.read<Decimal128>());
         case Bool:
             return Value(bool(buf.read<char>()));
         case Date:
