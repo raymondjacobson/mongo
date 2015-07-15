@@ -35,6 +35,12 @@
 #include <string>
 #include <utility>
 
+// _WCHAR_T is a built-in in C++, so we don't want the included C code to typedef it.
+#define _WCHAR_T
+#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
+#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
+#undef _WCHAR_T
+
 #include "mongo/platform/endian.h"
 #include "mongo/util/assert_util.h"
 

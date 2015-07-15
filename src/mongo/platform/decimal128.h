@@ -29,8 +29,6 @@
 
 #include <array>
 #include <string>
-#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
-#include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
 #include <utility>
 
 #include "mongo/platform/cstdint.h"
