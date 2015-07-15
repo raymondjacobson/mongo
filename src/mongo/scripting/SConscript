@@ -50,8 +50,9 @@ env.Library(
     ],
 )
 
+Import('decimalKnobsEnv')
+scriptingEnv = decimalKnobsEnv.Clone()
 if usev8:
-    scriptingEnv = env.Clone()
     scriptingEnv.InjectThirdPartyIncludePaths(libraries=['v8'])
     scriptingEnv.Library(
         target='scripting',
@@ -70,7 +71,6 @@ if usev8:
         ],
     )
 elif usemozjs:
-    scriptingEnv = env.Clone()
     scriptingEnv.InjectThirdPartyIncludePaths(libraries=['mozjs'])
 
     # TODO: get rid of all of this /FI and -include stuff and migrate to a shim

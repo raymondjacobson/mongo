@@ -37,6 +37,7 @@
 #include "mongo/client/sasl_client_authenticate.h"
 #include "mongo/config.h"
 #include "mongo/db/server_options.h"
+#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/rpc/protocol.h"
 #include "mongo/shell/shell_utils.h"
 #include "mongo/util/mongoutils/str.h"
@@ -163,6 +164,14 @@ Status addMongoShellOptions(moe::OptionSection* options) {
                                moe::String,
                                " none, opQueryOnly, opCommandOnly, all").hidden();
 
+// Permit users to use decimal support flags only if they have built with the option enabled
+#if ENABLE_EXPERIMENTAL_DECIMAL_SUPPORT == 1
+    // Shell option for experimental NumberDecimal data type
+    options->addOptionChaining("enableExperimentalDecimalSupport",
+                               "enableExperimentalDecimalSupport",
+                               moe::Bool,
+                               "enable experimental NumberDecimal type in the MongoDB shell.");
+#endif
     return Status::OK();
 }
 
@@ -320,6 +329,13 @@ Status storeMongoShellOptions(const moe::Environment& params,
                 shellGlobalParams.files.insert(shellGlobalParams.files.begin(), dbaddress);
             }
         }
+    }
+
+    if (params.count("enableExperimentalDecimalSupport")) {
+        // Set the enableExperimentalDecimalSupport global flag in decimal_knobs
+        // as well as the shell flag
+        enableExperimentalDecimalSupport = params["enableExperimentalDecimalSupport"].as<bool>();
+        shellGlobalParams.enableExperimentalDecimalSupport = enableExperimentalDecimalSupport;
     }
 
     if (shellGlobalParams.url == "*") {

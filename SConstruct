@@ -440,6 +440,13 @@ add_option('cache-dir',
     help='Specify the directory to use for caching objects if --cache is in use',
 )
 
+add_option("enable-experimental-decimal-support",
+    choices=['on', 'off'],
+    default='off',
+    help="Enable experimental decimal128 type support",
+    nargs=1,
+)
+
 def find_mongo_custom_variables():
     files = []
     for path in sys.path:
