@@ -57,7 +57,7 @@ public:
          */
         Decimal128Value();
         Decimal128Value(const Decimal128Value& dval);
-        Decimal128Value(const uint64_t dval[2]);
+        Decimal128Value(const unsigned long long dval[2]);
     };
 
     enum RoundingMode {

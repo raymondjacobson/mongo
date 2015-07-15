@@ -96,8 +96,8 @@ Decimal128::Decimal128Value::Decimal128Value(const Decimal128Value& dval)
     : high64(dval.high64), low64(dval.low64) {
 }
 
-Decimal128::Decimal128Value::Decimal128Value(const uint64_t dval[2])
-    : high64(dval[HIGH_64]), low64(dval[LOW_64]) {
+Decimal128::Decimal128Value::Decimal128Value(const unsigned long long dval[2])
+    : high64(static_cast<uint64_t>(dval[HIGH_64])), low64(static_cast<uint64_t>(dval[LOW_64])) {
 }
 
 Decimal128::Decimal128() : _value() {
