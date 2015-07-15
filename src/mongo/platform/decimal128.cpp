@@ -305,7 +305,7 @@ std::string Decimal128::toString() const {
      */
     bid128_to_string(decimalCharRepresentation, dec128, &idec_signaling_flags);
 
-    std::string dec128String = decimalCharRepresentation;
+    std::string dec128String(decimalCharRepresentation);
 
     // If the string is NaN or Infinity, return either NaN, +Inf, or -Inf
     std::string::size_type ePos = dec128String.find("E");
@@ -339,7 +339,7 @@ std::string Decimal128::toString() const {
     // Initially result is set to equal just the sign of the dec128 string
     // For formatting, leave off the sign if it is positive
     if (dec128String[0] == '-')
-        result = dec128String.substr(0, 1);
+        result = "-";
     stringReadPosition++;
 
     int scientificExponent = precision - 1 + exponent;
