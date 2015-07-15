@@ -564,7 +564,7 @@ const uint64_t negativeSignBit = 1ull << 63;
 // The exponent is placed at 49 because 64 bits - 1 sign bit - 14 exponent bits = 49
 const Decimal128 Decimal128::kLargestPositive(
     Decimal128::Decimal128Value(t34lo64, (maxBiasedExp << 49) + t34hi64));
-// The smallst positive decimal is 1 with the largest negative exponent of 0 (biased -6176)
+// The smallest positive decimal is 1 with the largest negative exponent of 0 (biased -6176)
 const Decimal128 Decimal128::kSmallestPositive(Decimal128::Decimal128Value(1ull, 0ull));
 
 // Add a sign bit to the largest and smallest positive to get their corresponding negatives

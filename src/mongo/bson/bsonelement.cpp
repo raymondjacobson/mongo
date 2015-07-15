@@ -1055,8 +1055,8 @@ size_t BSONElement::Hasher::operator()(const BSONElement& elem) const {
             const Decimal128 dcml = elem.numberDecimal();
             if (dcml.toAbs().isGreater(Decimal128(std::numeric_limits<double>::max())) &&
                 !dcml.isInfinite() && !dcml.isNaN()) {
-                // Multiply our decimal value by 0E-6176 to force equivalent decimal
-                // values in the same cohort to hash to the same value
+                // Normalize our decimal to force equivalent decimals
+                // in the same cohort to hash to the same value
                 Decimal128 dcmlNorm(dcml.normalize());
                 boost::hash_combine(hash, dcmlNorm.getValue().low64);
                 boost::hash_combine(hash, dcmlNorm.getValue().high64);

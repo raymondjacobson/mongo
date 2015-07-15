@@ -219,7 +219,7 @@ public:
                         RoundingMode roundMode = kRoundTiesToEven) const;
     /**
      * This function normalizes the cohort of a Decimal128 by forcing it to maximum
-     * precision (34 decimal digits). This normalization is important when it is desireable
+     * precision (34 decimal digits). This normalization is important when it is desirable
      * to force equal decimals of different representations (i.e. 5.0 and 5.00) to equal
      * decimals with the same representation (5000000000000000000000000000000000E-33).
      * Hashing equal decimals to equal hashes becomes possible with such normalization.

@@ -821,8 +821,8 @@ void Value::hash_combine(size_t& seed) const {
             const Decimal128 dcml = getDecimal();
             if (dcml.toAbs().isGreater(Decimal128(std::numeric_limits<double>::max())) &&
                 !dcml.isInfinite() && !dcml.isNaN()) {
-                // Multiply our decimal value by 0E-6176 to force equivalent decimal
-                // values in the same cohort to hash to the same value
+                // Normalize our decimal to force equivalent decimals
+                // in the same cohort to hash to the same value
                 Decimal128 dcmlNorm(dcml.normalize());
                 boost::hash_combine(seed, dcmlNorm.getValue().low64);
                 boost::hash_combine(seed, dcmlNorm.getValue().high64);
