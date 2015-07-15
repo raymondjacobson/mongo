@@ -3,6 +3,7 @@
 Import("env")
 
 env.Library('platform', [
+        'decimal128_knobs.cpp',
         'posix_fadvise.cpp',
         'process_id.cpp',
         "shared_library.cpp",
