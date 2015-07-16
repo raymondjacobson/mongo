@@ -82,8 +82,10 @@ static const WiredTigerItem emptyItem(NULL, 0);
 static const int kMinimumIndexVersion = 6;
 static const int kCurrentIndexVersion = 6;  // New indexes use this by default.
 static const int kMaximumIndexVersion = 6;
-BOOST_STATIC_ASSERT(kCurrentIndexVersion >= kMinimumIndexVersion);
-BOOST_STATIC_ASSERT(kCurrentIndexVersion <= kMaximumIndexVersion);
+static_assert(kCurrentIndexVersion >= kMinimumIndexVersion,
+              "kCurrentIndexVersion >= kMinimumIndexVersion");
+static_assert(kCurrentIndexVersion <= kMaximumIndexVersion,
+              "kCurrentIndexVersion <= kMaximumIndexVersion");
 
 bool hasFieldNames(const BSONObj& obj) {
     BSONForEach(e, obj) {
@@ -130,11 +132,9 @@ StatusWith<std::string> WiredTigerIndex::parseIndexOptions(const BSONObj& option
     StringBuilder ss;
     BSONForEach(elem, options) {
         if (elem.fieldNameStringData() == "configString") {
-            if (elem.type() != String) {
-                return StatusWith<std::string>(ErrorCodes::TypeMismatch,
-                                               str::stream() << "configString must be a string. "
-                                                             << "Not adding 'configString' value "
-                                                             << elem << " to index configuration");
+            Status status = WiredTigerUtil::checkTableCreationOptions(elem);
+            if (!status.isOK()) {
+                return status;
             }
             ss << elem.valueStringData() << ',';
         } else {
@@ -211,7 +211,7 @@ WiredTigerIndex::WiredTigerIndex(OperationContext* ctx,
                                  const IndexDescriptor* desc)
     : _ordering(Ordering::make(desc->keyPattern())),
       _uri(uri),
-      _instanceId(WiredTigerSession::genCursorId()),
+      _tableId(WiredTigerSession::genTableId()),
       _collectionNamespace(desc->parentNS()),
       _indexName(desc->indexName()) {
     Status versionStatus = WiredTigerUtil::checkApplicationMetadataFormatVersion(
@@ -232,7 +232,7 @@ Status WiredTigerIndex::insert(OperationContext* txn,
     if (!s.isOK())
         return s;
 
-    WiredTigerCursor curwrap(_uri, _instanceId, false, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, false, txn);
     curwrap.assertInActiveTxn();
     WT_CURSOR* c = curwrap.get();
 
@@ -246,7 +246,7 @@ void WiredTigerIndex::unindex(OperationContext* txn,
     invariant(loc.isNormal());
     dassert(!hasFieldNames(key));
 
-    WiredTigerCursor curwrap(_uri, _instanceId, false, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, false, txn);
     curwrap.assertInActiveTxn();
     WT_CURSOR* c = curwrap.get();
     invariant(c);
@@ -355,7 +355,7 @@ Status WiredTigerIndex::dupKeyCheck(OperationContext* txn,
     invariant(!hasFieldNames(key));
     invariant(unique());
 
-    WiredTigerCursor curwrap(_uri, _instanceId, false, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, false, txn);
     WT_CURSOR* c = curwrap.get();
 
     if (isDup(c, key, loc))
@@ -364,7 +364,7 @@ Status WiredTigerIndex::dupKeyCheck(OperationContext* txn,
 }
 
 bool WiredTigerIndex::isEmpty(OperationContext* txn) {
-    WiredTigerCursor curwrap(_uri, _instanceId, false, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, false, txn);
     WT_CURSOR* c = curwrap.get();
     if (!c)
         return true;
@@ -595,10 +595,7 @@ namespace {
 class WiredTigerIndexCursorBase : public SortedDataInterface::Cursor {
 public:
     WiredTigerIndexCursorBase(const WiredTigerIndex& idx, OperationContext* txn, bool forward)
-        : _txn(txn),
-          _cursor(idx.uri(), idx.instanceId(), false, txn),
-          _idx(idx),
-          _forward(forward) {}
+        : _txn(txn), _cursor(idx.uri(), idx.tableId(), false, txn), _idx(idx), _forward(forward) {}
 
     boost::optional<IndexKeyEntry> next(RequestedInfo parts) override {
         // Advance on a cursor at the end is a no-op

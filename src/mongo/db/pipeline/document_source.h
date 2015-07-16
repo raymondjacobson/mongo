@@ -32,10 +32,10 @@
 
 #include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <boost/unordered_map.hpp>
 #include <deque>
 #include <list>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -44,6 +44,7 @@
 #include "mongo/db/clientcursor.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/matcher/matcher.h"
+#include "mongo/db/pipeline/accumulator.h"
 #include "mongo/db/pipeline/document.h"
 #include "mongo/db/pipeline/dependencies.h"
 #include "mongo/db/pipeline/expression_context.h"
@@ -57,7 +58,6 @@
 
 namespace mongo {
 
-class Accumulator;
 class Document;
 class Expression;
 class ExpressionFieldPath;
@@ -68,10 +68,13 @@ class PlanExecutor;
 /**
  * Registers a DocumentSource to have the name 'key'. When a stage with name '$key' is found,
  * 'parser' will be called to construct a DocumentSource.
+ *
+ * As an example, if your document source looks like {"$foo": <args>}, with a parsing function
+ * 'createFromBson', you would add this line:
+ * REGISTER_EXPRESSION(foo, DocumentSourceFoo::createFromBson);
  */
 #define REGISTER_DOCUMENT_SOURCE(key, parser)                               \
     MONGO_INITIALIZER(addToDocSourceParserMap_##key)(InitializerContext*) { \
-        /* Prevent duplicate document sources with the same name. */        \
         DocumentSource::registerParser("$" #key, (parser));                 \
         return Status::OK();                                                \
     }
@@ -499,7 +502,7 @@ public:
             group field
      */
     void addAccumulator(const std::string& fieldName,
-                        boost::intrusive_ptr<Accumulator>(*pAccumulatorFactory)(),
+                        Accumulator::Factory accumulatorFactory,
                         const boost::intrusive_ptr<Expression>& pExpression);
 
     /// Tell this source if it is doing a merge from shards. Defaults to false.
@@ -524,8 +527,6 @@ public:
     // Virtuals for SplittableDocumentSource
     boost::intrusive_ptr<DocumentSource> getShardSource() final;
     boost::intrusive_ptr<DocumentSource> getMergeSource() final;
-
-    static const char groupName[];
 
 private:
     explicit DocumentSourceGroup(const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
@@ -563,7 +564,7 @@ private:
 
 
     typedef std::vector<boost::intrusive_ptr<Accumulator>> Accumulators;
-    typedef boost::unordered_map<Value, Accumulators, Value::Hash> GroupsMap;
+    typedef std::unordered_map<Value, Accumulators, Value::Hash> GroupsMap;
     GroupsMap groups;
 
     /*
@@ -579,7 +580,7 @@ private:
       These three vectors parallel each other.
     */
     std::vector<std::string> vFieldName;
-    std::vector<boost::intrusive_ptr<Accumulator>(*)()> vpAccumulatorFactory;
+    std::vector<Accumulator::Factory> vpAccumulatorFactory;
     std::vector<boost::intrusive_ptr<Expression>> vpExpression;
 
 
@@ -626,8 +627,6 @@ public:
     /// Returns the query in Matcher syntax.
     BSONObj getQuery() const;
 
-    static const char matchName[];
-
     /** Returns the portion of the match that can safely be promoted to before a $redact.
      *  If this returns an empty BSONObj, no part of this match may safely be promoted.
      *
@@ -672,8 +671,6 @@ public:
 
     static boost::intrusive_ptr<DocumentSource> create(
         const CursorIds& cursorIds, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
-
-    static const char name[];
 
     /** Returns non-owning pointers to cursors managed by this stage.
      *  Call this instead of getNext() if you want access to the raw streams.
@@ -749,8 +746,6 @@ public:
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
-    static const char outName[];
-
 private:
     DocumentSourceOut(const NamespaceString& outputNs,
                       const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
@@ -790,8 +785,6 @@ public:
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
-    static const char projectName[];
-
     /** projection as specified by the user */
     BSONObj getRaw() const {
         return _raw;
@@ -812,8 +805,6 @@ public:
     boost::optional<Document> getNext() final;
     const char* getSourceName() const final;
     boost::intrusive_ptr<DocumentSource> optimize() final;
-
-    static const char redactName[];
 
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& expCtx);
@@ -888,8 +879,6 @@ public:
     boost::intrusive_ptr<DocumentSourceLimit> getLimitSrc() const {
         return limitSrc;
     }
-
-    static const char sortName[];
 
 private:
     explicit DocumentSourceSort(const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
@@ -1000,8 +989,6 @@ public:
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
-    static const char limitName[];
-
 private:
     DocumentSourceLimit(const boost::intrusive_ptr<ExpressionContext>& pExpCtx, long long limit);
 
@@ -1061,8 +1048,6 @@ public:
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
-    static const char skipName[];
-
 private:
     explicit DocumentSourceSkip(const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
@@ -1092,8 +1077,6 @@ public:
      */
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
-
-    static const char unwindName[];
 
 private:
     explicit DocumentSourceUnwind(const boost::intrusive_ptr<ExpressionContext>& pExpCtx);

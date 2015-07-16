@@ -91,8 +91,11 @@ class ReplicationCoordinator : public SyncSourceSelector {
 public:
     static ReplicationCoordinator* get(ServiceContext* service);
     static ReplicationCoordinator* get(ServiceContext& service);
+    static ReplicationCoordinator* get(OperationContext* ctx);
+
     static void set(ServiceContext* service,
                     std::unique_ptr<ReplicationCoordinator> replCoordinator);
+
 
     struct StatusAndDuration {
     public:
@@ -621,10 +624,16 @@ public:
     /**
      * Attempts to update the current term for the V1 election protocol. If the term changes and
      * this node is primary, relinquishes primary.
-     * Returns true if the term was updated (that is, when "term" was higher than the previously
-     * recorded term) and false otherwise.
+     * Returns a Status OK if the term was *not* updated (meaning, it is safe to proceed with
+     * the rest of the work, because the term is still the same).
+     * Returns StaleTerm if the supplied term was higher than the current term.
      */
-    virtual bool updateTerm(long long term) = 0;
+    virtual Status updateTerm(long long term) = 0;
+
+    /**
+     * Called when a new snapshot is created.
+     */
+    virtual void onSnapshotCreate(OpTime timeOfSnapshot) = 0;
 
 protected:
     ReplicationCoordinator();

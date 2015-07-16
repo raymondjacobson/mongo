@@ -32,7 +32,6 @@
 
 #include "mongo/db/commands/mr.h"
 
-
 #include "mongo/client/connpool.h"
 #include "mongo/client/parallel.h"
 #include "mongo/db/auth/authorization_session.h"
@@ -56,9 +55,11 @@
 #include "mongo/db/query/query_planner.h"
 #include "mongo/db/range_preserver.h"
 #include "mongo/db/repl/replication_coordinator_global.h"
+#include "mongo/db/s/collection_metadata.h"
+#include "mongo/db/s/sharded_connection_info.h"
+#include "mongo/db/s/sharding_state.h"
 #include "mongo/s/catalog/catalog_cache.h"
 #include "mongo/s/chunk_manager.h"
-#include "mongo/s/collection_metadata.h"
 #include "mongo/s/config.h"
 #include "mongo/s/d_state.h"
 #include "mongo/s/grid.h"
@@ -510,9 +511,9 @@ void State::appendResults(BSONObjBuilder& final) {
 
     BSONArrayBuilder b((int)(_size * 1.2));  // _size is data size, doesn't count overhead and keys
 
-    for (InMemory::iterator i = _temp->begin(); i != _temp->end(); ++i) {
-        BSONObj key = i->first;
-        BSONList& all = i->second;
+    for (const auto& entry : *_temp) {
+        const BSONObj& key = entry.first;
+        const BSONList& all = entry.second;
 
         verify(all.size() == 1);
 
@@ -1298,8 +1299,10 @@ public:
 
             // Get metadata before we check our version, to make sure it doesn't increment
             // in the meantime.  Need to do this in the same lock scope as the block.
-            if (shardingState.needCollectionMetadata(client, config.ns)) {
-                collMetadata = shardingState.getCollectionMetadata(config.ns);
+            if (ShardingState::get(getGlobalServiceContext())
+                    ->needCollectionMetadata(client, config.ns)) {
+                collMetadata =
+                    ShardingState::get(getGlobalServiceContext())->getCollectionMetadata(config.ns);
             }
         }
 
@@ -1622,7 +1625,7 @@ public:
 
             // Fetch result from other shards 1 chunk at a time. It would be better to do
             // just one big $or query, but then the sorting would not be efficient.
-            const string shardName = shardingState.getShardName();
+            const string shardName = ShardingState::get(getGlobalServiceContext())->getShardName();
             const ChunkMap& chunkMap = cm->getChunkMap();
 
             for (ChunkMap::const_iterator it = chunkMap.begin(); it != chunkMap.end(); ++it) {

@@ -78,10 +78,11 @@ public:
      * Constructs a LiteParseQuery object that can be used to serialize to find command
      * BSON object.
      */
-    static StatusWith<std::unique_ptr<LiteParsedQuery>> makeAsFindCmd(NamespaceString nss,
-                                                                      const BSONObj& query,
-                                                                      const BSONObj& sort,
-                                                                      boost::optional<int> limit);
+    static StatusWith<std::unique_ptr<LiteParsedQuery>> makeAsFindCmd(
+        NamespaceString nss,
+        const BSONObj& query,
+        const BSONObj& sort,
+        boost::optional<long long> limit);
 
     /**
      * Converts this LPQ into a find command.
@@ -128,6 +129,9 @@ public:
      */
     static bool isQueryIsolated(const BSONObj& query);
 
+    // Name of the find command parameter used to pass read preference.
+    static const char* kFindCommandReadPrefField;
+
     // Names of the maxTimeMS command and query option.
     static const std::string cmdOptionMaxTimeMS;
     static const std::string queryOptionMaxTimeMS;
@@ -159,15 +163,15 @@ public:
         return _hint;
     }
 
-    static const int kDefaultBatchSize;
+    static const long long kDefaultBatchSize;
 
-    int getSkip() const {
+    long long getSkip() const {
         return _skip;
     }
-    boost::optional<int> getLimit() const {
+    boost::optional<long long> getLimit() const {
         return _limit;
     }
-    boost::optional<int> getBatchSize() const {
+    boost::optional<long long> getBatchSize() const {
         return _batchSize;
     }
     bool wantMore() const {
@@ -232,6 +236,10 @@ public:
     }
     bool isPartial() const {
         return _partial;
+    }
+
+    boost::optional<long long> getReplicationTerm() const {
+        return _replicationTerm;
     }
 
     /**
@@ -307,11 +315,11 @@ private:
     // {$hint: <String>}, where <String> is the index name hinted.
     BSONObj _hint;
 
-    int _skip = 0;
+    long long _skip = 0;
     bool _wantMore = true;
 
-    boost::optional<int> _limit;
-    boost::optional<int> _batchSize;
+    boost::optional<long long> _limit;
+    boost::optional<long long> _batchSize;
 
     bool _fromCommand = false;
     bool _explain = false;
@@ -337,6 +345,8 @@ private:
     bool _awaitData = false;
     bool _exhaust = false;
     bool _partial = false;
+
+    boost::optional<long long> _replicationTerm;
 };
 
 }  // namespace mongo

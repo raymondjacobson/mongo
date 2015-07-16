@@ -51,25 +51,18 @@ public:
      */
     Status init(const ConnectionString& configCS);
 
-    Status startup(bool upgrade) override;
+    Status startup() override;
 
     ConnectionString connectionString() const override;
 
     void shutDown() override;
 
-    Status enableSharding(const std::string& dbName) override;
-
     Status shardCollection(OperationContext* txn,
                            const std::string& ns,
                            const ShardKeyPattern& fieldsAndOrder,
                            bool unique,
-                           std::vector<BSONObj>* initPoints,
-                           std::set<ShardId>* initShardIds) override;
-
-    StatusWith<std::string> addShard(OperationContext* txn,
-                                     const std::string* shardProposedName,
-                                     const ConnectionString& shardConnectionString,
-                                     const long long maxSize) override;
+                           const std::vector<BSONObj>& initPoints,
+                           const std::set<ShardId>& initShardIds) override;
 
     StatusWith<ShardDrainingStatus> removeShard(OperationContext* txn,
                                                 const std::string& name) override;
@@ -129,25 +122,18 @@ public:
 
     DistLockManager* getDistLockManager() const override;
 
-private:
-    Status _checkDbDoesNotExist(const std::string& dbName) const override;
+    Status checkAndUpgrade(bool checkOnly) override;
 
-    /**
-     * Updates the config server's metadata to the current version.
-     */
-    Status _checkAndUpgradeConfigMetadata(bool doUpgrade);
+private:
+    Status _checkDbDoesNotExist(const std::string& dbName, DatabaseType* db) const override;
+
+    StatusWith<std::string> _generateNewShardName() const override;
 
     /**
      * Starts the thread that periodically checks data consistency amongst the config servers.
      * Note: this is not thread safe and can only be called once for the lifetime.
      */
     Status _startConfigServerChecker();
-
-    /**
-     * Generates a new shard name "shard<xxxx>"
-     * where <xxxx> is an autoincrementing value and <xxxx> < 10000
-     */
-    StatusWith<std::string> _getNewShardName() const;
 
     /**
      * Returns the number of shards recognized by the config servers

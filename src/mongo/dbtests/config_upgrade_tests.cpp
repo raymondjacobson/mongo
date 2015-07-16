@@ -27,6 +27,7 @@
  */
 
 #include "mongo/dbtests/config_server_fixture.h"
+#include "mongo/s/catalog/config_server_version.h"
 #include "mongo/s/catalog/legacy/cluster_client_internal.h"
 #include "mongo/s/catalog/legacy/config_upgrade.h"
 #include "mongo/s/catalog/type_chunk.h"
@@ -127,10 +128,13 @@ public:
             client.insert(ShardType::ConfigNS, shard.toBSON());
         }
 
+        time_t started = time(0);
         for (int i = 0; i < numPings; i++) {
             MongosType ping;
             ping.setName((string)(str::stream() << "$dummyMongos:" << (i + 1) << "0000"));
             ping.setPing(jsTime());
+            ping.setUptime(time(0) - started);
+            ping.setWaiting(false);
             ping.setMongoVersion(versionString);
             ping.setConfigVersion(CURRENT_CONFIG_VERSION);
 

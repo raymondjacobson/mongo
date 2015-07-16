@@ -35,7 +35,6 @@
 #include <algorithm>
 #include <math.h>
 #include <memory>
-#include "boost/thread/locks.hpp"
 #include "mongo/base/owned_pointer_vector.h"
 #include "mongo/client/dbclientinterface.h"  // For QueryOption_foobar
 #include "mongo/db/matcher/expression_array.h"
@@ -156,6 +155,18 @@ const char* encodeMatchType(MatchExpression::MatchType mt) {
             break;
         case MatchExpression::TEXT:
             return "te";
+            break;
+        case MatchExpression::BITS_ALL_SET:
+            return "ls";
+            break;
+        case MatchExpression::BITS_ALL_CLEAR:
+            return "lc";
+            break;
+        case MatchExpression::BITS_ANY_SET:
+            return "ys";
+            break;
+        case MatchExpression::BITS_ANY_CLEAR:
+            return "yc";
             break;
         default:
             verify(0);

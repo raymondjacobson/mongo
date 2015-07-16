@@ -214,7 +214,7 @@ add_option('wiredtiger',
 )
 
 # library choices
-js_engine_choices = ['v8-3.12', 'v8-3.25', 'none']
+js_engine_choices = ['v8-3.12', 'v8-3.25', 'mozjs', 'none']
 add_option('js-engine',
     choices=js_engine_choices,
     default=js_engine_choices[0],
@@ -443,6 +443,13 @@ add_option('cache',
 add_option('cache-dir',
     default='$BUILD_ROOT/scons/cache',
     help='Specify the directory to use for caching objects if --cache is in use',
+)
+
+add_option("enable-experimental-decimal-support",
+    choices=['on', 'off'],
+    default='off',
+    help="Enable experimental decimal128 type support",
+    nargs=1,
 )
 
 def find_mongo_custom_variables():
@@ -761,12 +768,14 @@ jsEngine = get_option( "js-engine")
 
 serverJs = get_option( "server-js" ) == "on"
 
-usev8 = (jsEngine != 'none')
+usev8 = (jsEngine.startswith('v8'))
+
+usemozjs = (jsEngine.startswith('mozjs'))
 
 v8version = jsEngine[3:] if jsEngine.startswith('v8-') else 'none'
 v8suffix = '' if v8version == '3.12' else '-' + v8version
 
-if not serverJs and not usev8:
+if not serverJs and not usev8 and not usemozjs:
     print("Warning: --server-js=off is not needed with --js-engine=none")
 
 # We defer building the env until we have determined whether we want certain values. Some values
@@ -996,7 +1005,9 @@ if optBuild:
     env.SetConfigHeaderDefine("MONGO_CONFIG_OPTIMIZED_BUILD")
 
 # Ignore requests to build fast and loose for release builds.
-if get_option('build-fast-and-loose') == "on" and not has_option('release'):
+# Also ignore fast-and-loose option if the scons cache is enabled (see SERVER-19088)
+if get_option('build-fast-and-loose') == "on" and \
+    not has_option('release') and not has_option('cache'):
     # See http://www.scons.org/wiki/GoFastButton for details
     env.Decider('MD5-timestamp')
     env.SetOption('max_drift', 1)
@@ -1200,11 +1211,8 @@ elif env.TargetOSIs('windows'):
                      'DbgHelp.lib',
                      'shell32.lib',
                      'Iphlpapi.lib',
+                     'winmm.lib',
                      'version.lib'])
-
-    # v8 calls timeGetTime()
-    if usev8:
-        env.Append(LIBS=['winmm.lib'])
 
 # When building on visual studio, this sets the name of the debug symbols file
 if env.ToolchainIs('msvc'):
@@ -1214,7 +1222,8 @@ env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 if env.TargetOSIs('posix'):
 
     # -Winvalid-pch Warn if a precompiled header (see Precompiled Headers) is found in the search path but can't be used.
-    env.Append( CCFLAGS=["-fPIC",
+    env.Append( CCFLAGS=["-fno-omit-frame-pointer",
+                         "-fPIC",
                          "-fno-strict-aliasing",
                          "-ggdb",
                          "-pthread",
@@ -2053,6 +2062,7 @@ def doConfigure(myenv):
             # Boost thread v4's variadic thread support doesn't
             # permit more than four parameters.
             "BOOST_THREAD_DONT_PROVIDE_VARIADIC_THREAD",
+            "BOOST_SYSTEM_NO_DEPRECATED",
         ]
     )
 
@@ -2307,6 +2317,7 @@ Export("get_option")
 Export("has_option use_system_version_of_library")
 Export("serverJs")
 Export("usev8")
+Export("usemozjs")
 Export("v8version v8suffix")
 Export("boostSuffix")
 Export('module_sconscripts')

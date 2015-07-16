@@ -43,18 +43,16 @@ public:
 
     ConnectionString connectionString() const override;
 
-    Status startup(bool upgrade) override;
+    Status startup() override;
 
     void shutDown() override;
-
-    Status enableSharding(const std::string& dbName) override;
 
     Status shardCollection(OperationContext* txn,
                            const std::string& ns,
                            const ShardKeyPattern& fieldsAndOrder,
                            bool unique,
-                           std::vector<BSONObj>* initPoints,
-                           std::set<ShardId>* initShardIds = nullptr) override;
+                           const std::vector<BSONObj>& initPoints,
+                           const std::set<ShardId>& initShardIds) override;
 
     StatusWith<std::string> addShard(OperationContext* txn,
                                      const std::string* shardProposedName,
@@ -121,8 +119,12 @@ public:
 
     DistLockManager* getDistLockManager() const override;
 
+    Status checkAndUpgrade(bool checkOnly) override;
+
 private:
-    Status _checkDbDoesNotExist(const std::string& dbName) const override;
+    Status _checkDbDoesNotExist(const std::string& dbName, DatabaseType* db) const override;
+
+    StatusWith<std::string> _generateNewShardName() const override;
 
     std::unique_ptr<DistLockManagerMock> _mockDistLockMgr;
 };

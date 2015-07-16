@@ -45,6 +45,12 @@ struct HostAndPort;
 template <typename T>
 class StatusWith;
 
+namespace executor {
+
+class TaskExecutor;
+
+}  // namespace executor
+
 namespace repl {
 
 class LastVote;
@@ -67,7 +73,7 @@ public:
      *
      * NOTE: Only starts threads if they are not already started,
      */
-    virtual void startThreads() = 0;
+    virtual void startThreads(executor::TaskExecutor* taskExecutor) = 0;
 
     /**
      * Starts the Master/Slave threads and sets up logOp
@@ -182,11 +188,16 @@ public:
     virtual void dropAllTempCollections(OperationContext* txn) = 0;
 
     /**
-     * Updates the committed snapshot to the newest possible view before or on newCommitPoint.
-     *
-     * If this changes the snapshot, returns the Timestamp for the new snapshot.
+     * Drops all snapshots and clears the "committed" snapshot.
      */
-    virtual boost::optional<Timestamp> updateCommittedSnapshot(OpTime newCommitPoint) = 0;
+    virtual void dropAllSnapshots() = 0;
+
+    /**
+     * Updates the committed snapshot to the newCommitPoint, and deletes older snapshots.
+     *
+     * It is illegal to call with a newCommitPoint that does not name an existing snapshot.
+     */
+    virtual void updateCommittedSnapshot(OpTime newCommitPoint) = 0;
 
     /**
      * Signals the SnapshotThread, if running, to take a forced snapshot even if the global
@@ -195,6 +206,11 @@ public:
      * Does not wait for the timestamp to be taken.
      */
     virtual void forceSnapshotCreation() = 0;
+
+    /**
+     * Returns whether or not the SnapshotThread is active.
+     */
+    virtual bool snapshotsEnabled() const = 0;
 };
 
 }  // namespace repl

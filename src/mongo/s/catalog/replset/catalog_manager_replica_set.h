@@ -35,6 +35,9 @@
 
 namespace mongo {
 
+class NamespaceString;
+class VersionType;
+
 /**
  * Implements the catalog manager for talking to replica set config servers.
  */
@@ -51,25 +54,18 @@ public:
      */
     Status init(const ConnectionString& configCS, std::unique_ptr<DistLockManager> distLockManager);
 
-    Status startup(bool upgrade) override;
+    Status startup() override;
 
     ConnectionString connectionString() const override;
 
     void shutDown() override;
 
-    Status enableSharding(const std::string& dbName) override;
-
     Status shardCollection(OperationContext* txn,
                            const std::string& ns,
                            const ShardKeyPattern& fieldsAndOrder,
                            bool unique,
-                           std::vector<BSONObj>* initPoints,
-                           std::set<ShardId>* initShardsIds = nullptr) override;
-
-    StatusWith<std::string> addShard(OperationContext* txn,
-                                     const std::string* shardProposedName,
-                                     const ConnectionString& shardConnectionString,
-                                     const long long maxSize) override;
+                           const std::vector<BSONObj>& initPoints,
+                           const std::set<ShardId>& initShardsIds) override;
 
     StatusWith<ShardDrainingStatus> removeShard(OperationContext* txn,
                                                 const std::string& name) override;
@@ -127,8 +123,12 @@ public:
 
     DistLockManager* getDistLockManager() const override;
 
+    Status checkAndUpgrade(bool checkOnly) override;
+
 private:
-    Status _checkDbDoesNotExist(const std::string& dbName) const override;
+    Status _checkDbDoesNotExist(const std::string& dbName, DatabaseType* db) const override;
+
+    StatusWith<std::string> _generateNewShardName() const override;
 
     /**
      * Helper for running commands against the config server with logic for retargeting and
@@ -143,6 +143,19 @@ private:
      */
     StatusWith<BSONObj> _runConfigServerCommandWithNotMasterRetries(const std::string& dbName,
                                                                     const BSONObj& cmdObj);
+
+    /**
+     * Helper method for running a count command against a given target server with appropriate
+     * error handling.
+     */
+    StatusWith<long long> _runCountCommand(const HostAndPort& target,
+                                           const NamespaceString& ns,
+                                           BSONObj query);
+
+    /**
+     * Returns the current cluster schema/protocol version.
+     */
+    StatusWith<VersionType> _getConfigVersion();
 
     // Config server connection string
     ConnectionString _configServerConnectionString;

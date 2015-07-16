@@ -36,10 +36,12 @@
 #include "mongo/client/query_fetcher.h"
 #include "mongo/client/remote_command_targeter.h"
 #include "mongo/client/remote_command_targeter_factory.h"
+#include "mongo/client/replica_set_monitor.h"
 #include "mongo/executor/task_executor.h"
 #include "mongo/s/catalog/catalog_manager.h"
 #include "mongo/s/catalog/type_shard.h"
 #include "mongo/s/client/shard.h"
+#include "mongo/s/client/shard_connection.h"
 #include "mongo/stdx/memory.h"
 #include "mongo/stdx/mutex.h"
 #include "mongo/util/log.h"
@@ -156,6 +158,9 @@ void ShardRegistry::remove(const ShardId& id) {
             ++i;
         }
     }
+
+    shardConnectionPool.removeHost(id);
+    ReplicaSetMonitor::remove(id);
 }
 
 void ShardRegistry::getAllShardIds(vector<ShardId>* all) const {
@@ -260,7 +265,7 @@ StatusWith<std::vector<BSONObj>> ShardRegistry::exhaustiveFind(const HostAndPort
                                                                const NamespaceString& nss,
                                                                const BSONObj& query,
                                                                const BSONObj& sort,
-                                                               boost::optional<int> limit) {
+                                                               boost::optional<long long> limit) {
     // If for some reason the callback never gets invoked, we will return this status
     Status status = Status(ErrorCodes::InternalError, "Internal error running find command");
     vector<BSONObj> results;
@@ -284,7 +289,7 @@ StatusWith<std::vector<BSONObj>> ShardRegistry::exhaustiveFind(const HostAndPort
     };
 
     unique_ptr<LiteParsedQuery> findCmd(
-        fassertStatusOK(28688, LiteParsedQuery::makeAsFindCmd(nss, query, sort, std::move(limit))));
+        fassertStatusOK(28688, LiteParsedQuery::makeAsFindCmd(nss, query, sort, limit)));
 
     QueryFetcher fetcher(_executor.get(), host, nss, findCmd->asFindCommand(), fetcherCallback);
 

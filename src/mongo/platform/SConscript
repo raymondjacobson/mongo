@@ -2,6 +2,26 @@
 
 Import("env")
 
+decimalKnobsEnv = env.Clone()
+
+if GetOption('enable-experimental-decimal-support') == 'on':
+    decimalKnobsEnv.Append(
+        CPPDEFINES = {
+            "ENABLE_EXPERIMENTAL_DECIMAL_SUPPORT" : 1
+        }
+    )
+
+decimalKnobsEnv.Library(
+	target='decimal_knobs',
+	source=[
+        'decimal128_knobs.cpp',
+    ],
+    LIBDEPS=[
+        "$BUILD_DIR/mongo/db/server_parameters",
+    ])
+
+Export('decimalKnobsEnv')
+
 env.Library('platform', [
         'decimal128.cpp',
         'posix_fadvise.cpp',

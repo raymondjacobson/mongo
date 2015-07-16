@@ -26,25 +26,31 @@
  *    it in the license file.
  */
 
+#include "mongo/platform/basic.h"
+
 #include "mongo/db/ops/update_lifecycle_impl.h"
 
 #include "mongo/db/client.h"
 #include "mongo/db/catalog/database.h"
 #include "mongo/db/field_ref.h"
 #include "mongo/db/catalog/collection.h"
+#include "mongo/db/s/collection_metadata.h"
+#include "mongo/db/s/sharding_state.h"
 #include "mongo/s/chunk_version.h"
-#include "mongo/s/d_state.h"
 
 namespace mongo {
+
 namespace {
-CollectionMetadataPtr getMetadata(const NamespaceString& nsString) {
-    if (shardingState.enabled()) {
-        return shardingState.getCollectionMetadata(nsString.ns());
+
+std::shared_ptr<CollectionMetadata> getMetadata(const NamespaceString& nsString) {
+    if (ShardingState::get(getGlobalServiceContext())->enabled()) {
+        return ShardingState::get(getGlobalServiceContext())->getCollectionMetadata(nsString.ns());
     }
 
-    return CollectionMetadataPtr();
+    return nullptr;
 }
-}
+
+}  // namespace
 
 UpdateLifecycleImpl::UpdateLifecycleImpl(bool ignoreVersion, const NamespaceString& nsStr)
     : _nsString(nsStr),

@@ -71,8 +71,10 @@ namespace {
 static const int kMinimumRecordStoreVersion = 1;
 static const int kCurrentRecordStoreVersion = 1;  // New record stores use this by default.
 static const int kMaximumRecordStoreVersion = 1;
-BOOST_STATIC_ASSERT(kCurrentRecordStoreVersion >= kMinimumRecordStoreVersion);
-BOOST_STATIC_ASSERT(kCurrentRecordStoreVersion <= kMaximumRecordStoreVersion);
+static_assert(kCurrentRecordStoreVersion >= kMinimumRecordStoreVersion,
+              "kCurrentRecordStoreVersion >= kMinimumRecordStoreVersion");
+static_assert(kCurrentRecordStoreVersion <= kMaximumRecordStoreVersion,
+              "kCurrentRecordStoreVersion <= kMaximumRecordStoreVersion");
 
 bool shouldUseOplogHack(OperationContext* opCtx, const std::string& uri) {
     StatusWith<BSONObj> appMetadata = WiredTigerUtil::getApplicationMetadata(opCtx, uri);
@@ -99,7 +101,7 @@ public:
           _txn(txn),
           _forward(forward),
           _forParallelCollectionScan(forParallelCollectionScan),
-          _cursor(new WiredTigerCursor(rs.getURI(), rs.instanceId(), true, txn)),
+          _cursor(new WiredTigerCursor(rs.getURI(), rs.tableId(), true, txn)),
           _readUntilForOplog(WiredTigerRecoveryUnit::get(txn)->getOplogReadTill()) {}
 
     boost::optional<Record> next() final {
@@ -224,7 +226,7 @@ public:
         if (_forParallelCollectionScan) {
             needRestore = true;
             _savedRecoveryUnit = txn->recoveryUnit();
-            _cursor.reset(new WiredTigerCursor(_rs.getURI(), _rs.instanceId(), true, txn));
+            _cursor.reset(new WiredTigerCursor(_rs.getURI(), _rs.tableId(), true, txn));
             _forParallelCollectionScan = false;  // we only do this the first time
         }
         invariant(_savedRecoveryUnit == txn->recoveryUnit());
@@ -308,21 +310,16 @@ StatusWith<std::string> WiredTigerRecordStore::parseOptionsField(const BSONObj o
     StringBuilder ss;
     BSONForEach(elem, options) {
         if (elem.fieldNameStringData() == "configString") {
-            if (elem.type() != String) {
-                return StatusWith<std::string>(ErrorCodes::TypeMismatch,
-                                               str::stream()
-                                                   << "storageEngine.wiredTiger.configString "
-                                                   << "must be a string. "
-                                                   << "Not adding 'configString' value " << elem
-                                                   << " to collection configuration");
+            Status status = WiredTigerUtil::checkTableCreationOptions(elem);
+            if (!status.isOK()) {
+                return status;
             }
             ss << elem.valueStringData() << ',';
         } else {
             // Return error on first unrecognized field.
             return StatusWith<std::string>(ErrorCodes::InvalidOptions,
                                            str::stream() << '\'' << elem.fieldNameStringData()
-                                                         << '\'' << " is not a supported option in "
-                                                         << "storageEngine.wiredTiger");
+                                                         << '\'' << " is not a supported option.");
         }
     }
     return StatusWith<std::string>(ss.str());
@@ -392,7 +389,7 @@ WiredTigerRecordStore::WiredTigerRecordStore(OperationContext* ctx,
                                              WiredTigerSizeStorer* sizeStorer)
     : RecordStore(ns),
       _uri(uri.toString()),
-      _instanceId(WiredTigerSession::genCursorId()),
+      _tableId(WiredTigerSession::genTableId()),
       _isCapped(isCapped),
       _isOplog(NamespaceString::oplog(ns)),
       _cappedMaxSize(cappedMaxSize),
@@ -533,7 +530,7 @@ RecordData WiredTigerRecordStore::_getData(const WiredTigerCursor& cursor) const
 
 RecordData WiredTigerRecordStore::dataFor(OperationContext* txn, const RecordId& loc) const {
     // ownership passes to the shared_array created below
-    WiredTigerCursor curwrap(_uri, _instanceId, true, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, true, txn);
     WT_CURSOR* c = curwrap.get();
     invariant(c);
     c->set_key(c, _makeKey(loc));
@@ -546,7 +543,7 @@ RecordData WiredTigerRecordStore::dataFor(OperationContext* txn, const RecordId&
 bool WiredTigerRecordStore::findRecord(OperationContext* txn,
                                        const RecordId& loc,
                                        RecordData* out) const {
-    WiredTigerCursor curwrap(_uri, _instanceId, true, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, true, txn);
     WT_CURSOR* c = curwrap.get();
     invariant(c);
     c->set_key(c, _makeKey(loc));
@@ -560,7 +557,7 @@ bool WiredTigerRecordStore::findRecord(OperationContext* txn,
 }
 
 void WiredTigerRecordStore::deleteRecord(OperationContext* txn, const RecordId& loc) {
-    WiredTigerCursor cursor(_uri, _instanceId, true, txn);
+    WiredTigerCursor cursor(_uri, _tableId, true, txn);
     cursor.assertInActiveTxn();
     WT_CURSOR* c = cursor.get();
     c->set_key(c, _makeKey(loc));
@@ -678,7 +675,7 @@ int64_t WiredTigerRecordStore::cappedDeleteAsNeeded_inlock(OperationContext* txn
     try {
         WriteUnitOfWork wuow(txn);
 
-        WiredTigerCursor curwrap(_uri, _instanceId, true, txn);
+        WiredTigerCursor curwrap(_uri, _tableId, true, txn);
         WT_CURSOR* c = curwrap.get();
         RecordId newestOld;
         int ret = 0;
@@ -721,7 +718,7 @@ int64_t WiredTigerRecordStore::cappedDeleteAsNeeded_inlock(OperationContext* txn
             }
             invariantWTOK(ret);
 
-            WiredTigerCursor startWrap(_uri, _instanceId, true, txn);
+            WiredTigerCursor startWrap(_uri, _tableId, true, txn);
             WT_CURSOR* start = startWrap.get();
             ret = WT_OP_CHECK(start->next(start));
             invariantWTOK(ret);
@@ -786,7 +783,7 @@ StatusWith<RecordId> WiredTigerRecordStore::insertRecord(OperationContext* txn,
         loc = _nextId();
     }
 
-    WiredTigerCursor curwrap(_uri, _instanceId, true, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, true, txn);
     curwrap.assertInActiveTxn();
     WT_CURSOR* c = curwrap.get();
     invariant(c);
@@ -845,7 +842,7 @@ StatusWith<RecordId> WiredTigerRecordStore::updateRecord(OperationContext* txn,
                                                          int len,
                                                          bool enforceQuota,
                                                          UpdateNotifier* notifier) {
-    WiredTigerCursor curwrap(_uri, _instanceId, true, txn);
+    WiredTigerCursor curwrap(_uri, _tableId, true, txn);
     curwrap.assertInActiveTxn();
     WT_CURSOR* c = curwrap.get();
     invariant(c);
@@ -917,7 +914,7 @@ std::vector<std::unique_ptr<RecordCursor>> WiredTigerRecordStore::getManyCursors
 }
 
 Status WiredTigerRecordStore::truncate(OperationContext* txn) {
-    WiredTigerCursor startWrap(_uri, _instanceId, true, txn);
+    WiredTigerCursor startWrap(_uri, _tableId, true, txn);
     WT_CURSOR* start = startWrap.get();
     int ret = WT_OP_CHECK(start->next(start));
     // Empty collections don't have anything to truncate.
@@ -1111,7 +1108,7 @@ boost::optional<RecordId> WiredTigerRecordStore::oplogStartHack(
         _oplogSetStartHack(wru);
     }
 
-    WiredTigerCursor cursor(_uri, _instanceId, true, txn);
+    WiredTigerCursor cursor(_uri, _tableId, true, txn);
     WT_CURSOR* c = cursor.get();
 
     int cmp;

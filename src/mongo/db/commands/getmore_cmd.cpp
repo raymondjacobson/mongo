@@ -45,10 +45,9 @@
 #include "mongo/db/exec/working_set_common.h"
 #include "mongo/db/global_timestamp.h"
 #include "mongo/db/query/cursor_responses.h"
-#include "mongo/db/repl/oplog.h"
-#include "mongo/db/service_context.h"
 #include "mongo/db/query/find.h"
 #include "mongo/db/query/getmore_request.h"
+#include "mongo/db/repl/replication_coordinator_global.h"
 #include "mongo/db/repl/oplog.h"
 #include "mongo/db/service_context.h"
 #include "mongo/db/stats/counters.h"
@@ -219,6 +218,16 @@ public:
             }
         }
 
+        // Validate term, if provided.
+        if (request.term) {
+            auto replCoord = repl::ReplicationCoordinator::get(txn);
+            Status status = replCoord->updateTerm(*request.term);
+            // Note: updateTerm returns ok if term stayed the same.
+            if (!status.isOK()) {
+                return appendCommandStatus(result, status);
+            }
+        }
+
         // On early return, get rid of the cursor.
         ScopeGuard cursorFreer = MakeGuard(&GetMoreCmd::cleanupCursor, txn, &ccPin, request);
 
@@ -262,7 +271,7 @@ public:
         BSONArrayBuilder nextBatch;
         BSONObj obj;
         PlanExecutor::ExecState state;
-        int numResults = 0;
+        long long numResults = 0;
         Status batchStatus = generateBatch(cursor, request, &nextBatch, &state, &numResults);
         if (!batchStatus.isOK()) {
             return appendCommandStatus(result, batchStatus);
@@ -352,7 +361,7 @@ public:
                          const GetMoreRequest& request,
                          BSONArrayBuilder* nextBatch,
                          PlanExecutor::ExecState* state,
-                         int* numResults) {
+                         long long* numResults) {
         PlanExecutor* exec = cursor->getExecutor();
         const bool isAwaitData = isCursorAwaitData(cursor);
 

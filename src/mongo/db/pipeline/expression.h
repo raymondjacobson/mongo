@@ -35,10 +35,12 @@
 #include <string>
 #include <vector>
 
+#include "mongo/base/init.h"
 #include "mongo/db/pipeline/dependencies.h"
 #include "mongo/db/pipeline/document.h"
 #include "mongo/db/pipeline/field_path.h"
 #include "mongo/db/pipeline/value.h"
+#include "mongo/stdx/functional.h"
 #include "mongo/util/intrusive_counter.h"
 #include "mongo/util/mongoutils/str.h"
 #include "mongo/util/string_map.h"
@@ -49,6 +51,18 @@ class BSONArrayBuilder;
 class BSONElement;
 class BSONObjBuilder;
 class DocumentSource;
+
+/**
+ * Registers an Parser so it can be called from parseExpression and friends.
+ *
+ * As an example, if your expression looks like {"$foo": [1,2,3]} you would add this line:
+ * REGISTER_EXPRESSION(foo, ExpressionFoo::parse);
+ */
+#define REGISTER_EXPRESSION(key, parser)                                     \
+    MONGO_INITIALIZER(addToExpressionParserMap_##key)(InitializerContext*) { \
+        Expression::registerExpression("$" #key, (parser));                  \
+        return Status::OK();                                                 \
+    }
 
 // TODO: Look into merging with ExpressionContext and possibly ObjectCtx.
 /// The state used as input and working space for Expressions.
@@ -157,6 +171,9 @@ private:
 
 class Expression : public IntrusiveCounterUnsigned {
 public:
+    using Parser =
+        stdx::function<boost::intrusive_ptr<Expression>(BSONElement, const VariablesParseState&)>;
+
     virtual ~Expression(){};
 
     /*
@@ -295,6 +312,14 @@ public:
      */
     virtual Value evaluateInternal(Variables* vars) const = 0;
 
+    /**
+     * Registers an Parser so it can be called from parseExpression and friends.
+     *
+     * DO NOT call this method directly. Instead, use the REGISTER_EXPRESSION macro defined in this
+     * file.
+     */
+    static void registerExpression(std::string key, Parser parser);
+
 protected:
     typedef std::vector<boost::intrusive_ptr<Expression>> ExpressionVector;
 };
@@ -356,6 +381,23 @@ public:
 /// Inherit from this class if your expression takes a variable number of arguments.
 template <typename SubClass>
 class ExpressionVariadic : public ExpressionNaryBase<SubClass> {};
+
+/**
+ * Inherit from this class if your expression can take a range of arguments, e.g. if it has some
+ * optional arguments.
+ */
+template <typename SubClass, int MinArgs, int MaxArgs>
+class ExpressionRangedArity : public ExpressionNaryBase<SubClass> {
+public:
+    void validateArguments(const Expression::ExpressionVector& args) const override {
+        uassert(28667,
+                mongoutils::str::stream()
+                    << "Expression " << this->getOpName() << " takes at least " << MinArgs
+                    << " arguments, and at most " << MaxArgs << ", but " << args.size()
+                    << " were passed in.",
+                MinArgs <= args.size() && args.size() <= MaxArgs);
+    }
+};
 
 /// Inherit from this class if your expression takes a fixed number of arguments.
 template <typename SubClass, int NArgs>
@@ -510,7 +552,9 @@ public:
 
       @returns the value
      */
-    Value getValue() const;
+    Value getValue() const {
+        return pValue;
+    }
 
 private:
     explicit ExpressionConstant(const Value& pValue);
@@ -856,7 +900,9 @@ public:
 
       @returns how many fields have been added
      */
-    size_t getFieldCount() const;
+    size_t getFieldCount() const {
+        return _expressions.size();
+    };
 
     /*
       Specialized BSON conversion that allows for writing out a
@@ -976,6 +1022,20 @@ public:
 };
 
 
+class ExpressionSize final : public ExpressionFixedArity<ExpressionSize, 1> {
+public:
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
+class ExpressionSlice final : public ExpressionRangedArity<ExpressionSlice, 2, 3> {
+public:
+    Value evaluateInternal(Variables* vars) const final;
+    const char* getOpName() const final;
+};
+
+
 class ExpressionIsArray final : public ExpressionFixedArity<ExpressionIsArray, 1> {
 public:
     Value evaluateInternal(Variables* vars) const final;
@@ -983,16 +1043,11 @@ public:
 };
 
 
-class ExpressionSize final : public ExpressionFixedArity<ExpressionSize, 1> {
-public:
-    Value evaluateInternal(Variables* vars) const final;
-    const char* getOpName() const final;
-};
-
 class ExpressionSqrt final : public ExpressionFixedArity<ExpressionSqrt, 1> {
     Value evaluateInternal(Variables* vars) const final;
     const char* getOpName() const final;
 };
+
 
 class ExpressionStrcasecmp final : public ExpressionFixedArity<ExpressionStrcasecmp, 2> {
 public:
@@ -1048,18 +1103,4 @@ public:
         return tm.tm_year + 1900;
     }
 };
-}
-
-
-/* ======================= INLINED IMPLEMENTATIONS ========================== */
-
-namespace mongo {
-
-inline Value ExpressionConstant::getValue() const {
-    return pValue;
-}
-
-inline size_t ExpressionObject::getFieldCount() const {
-    return _expressions.size();
-}
 }

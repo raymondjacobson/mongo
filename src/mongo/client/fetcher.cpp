@@ -79,13 +79,11 @@ Status parseCursorResponse(const BSONObj& obj,
                       str::stream() << "cursor response must contain '" << kCursorFieldName << "."
                                     << kCursorIdFieldName << "' field: " << obj);
     }
-    if (!(cursorIdElement.type() == mongo::NumberLong ||
-          cursorIdElement.type() == mongo::NumberInt)) {
+    if (cursorIdElement.type() != mongo::NumberLong) {
         return Status(ErrorCodes::FailedToParse,
-                      str::stream()
-                          << "'" << kCursorFieldName << "." << kCursorIdFieldName
-                          << "' field must be a integral number of type 'int' or 'long' but was a '"
-                          << typeName(cursorIdElement.type()) << "': " << obj);
+                      str::stream() << "'" << kCursorFieldName << "." << kCursorIdFieldName
+                                    << "' field must be a 'long' but was a '"
+                                    << typeName(cursorIdElement.type()) << "': " << obj);
     }
     batchData->cursorId = cursorIdElement.numberLong();
 
@@ -158,6 +156,7 @@ Fetcher::Fetcher(executor::TaskExecutor* executor,
       _metadata(metadata.getOwned()),
       _work(work),
       _active(false),
+      _first(true),
       _remoteCommandCallbackHandle() {
     uassert(ErrorCodes::BadValue, "null replication executor", executor);
     uassert(ErrorCodes::BadValue, "database name cannot be empty", !dbname.empty());
@@ -262,6 +261,12 @@ void Fetcher::_callback(const RemoteCommandCallbackArgs& rcbd, const char* batch
     }
 
     batchData.otherFields.metadata = std::move(rcbd.response.getValue().metadata);
+    batchData.elapsedMillis = rcbd.response.getValue().elapsedMillis;
+    {
+        stdx::lock_guard<stdx::mutex> lk(_mutex);
+        batchData.first = _first;
+        _first = false;
+    }
 
     NextAction nextAction = NextAction::kNoAction;
 
@@ -321,6 +326,7 @@ void Fetcher::_sendKillCursors(const CursorId id, const NamespaceString& nss) {
 void Fetcher::_finishCallback() {
     stdx::lock_guard<stdx::mutex> lk(_mutex);
     _active = false;
+    _first = false;
     _condition.notify_all();
 }
 

@@ -70,9 +70,10 @@
 #include "mongo/db/server_options.h"
 #include "mongo/db/server_parameters.h"
 #include "mongo/db/service_context.h"
+#include "mongo/db/s/collection_metadata.h"
+#include "mongo/db/s/sharding_state.h"
 #include "mongo/db/storage_options.h"
 #include "mongo/db/storage/oplog_hack.h"
-#include "mongo/s/d_state.h"
 #include "mongo/scripting/engine.h"
 #include "mongo/stdx/memory.h"
 #include "mongo/util/log.h"
@@ -168,9 +169,9 @@ void fillOutPlannerParams(OperationContext* txn,
 
     // If the caller wants a shard filter, make sure we're actually sharded.
     if (plannerParams->options & QueryPlannerParams::INCLUDE_SHARD_FILTER) {
-        CollectionMetadataPtr collMetadata =
-            shardingState.getCollectionMetadata(canonicalQuery->ns());
-
+        std::shared_ptr<CollectionMetadata> collMetadata =
+            ShardingState::get(getGlobalServiceContext())
+                ->getCollectionMetadata(canonicalQuery->ns());
         if (collMetadata) {
             plannerParams->shardKey = collMetadata->getKeyPattern();
         } else {
@@ -245,8 +246,10 @@ Status prepareExecution(OperationContext* opCtx,
 
         // Might have to filter out orphaned docs.
         if (plannerParams.options & QueryPlannerParams::INCLUDE_SHARD_FILTER) {
-            *rootOut = new ShardFilterStage(
-                shardingState.getCollectionMetadata(collection->ns()), ws, *rootOut);
+            *rootOut = new ShardFilterStage(ShardingState::get(getGlobalServiceContext())
+                                                ->getCollectionMetadata(collection->ns().ns()),
+                                            ws,
+                                            *rootOut);
         }
 
         // There might be a projection. The idhack stage will always fetch the full
@@ -452,7 +455,7 @@ StatusWith<unique_ptr<PlanExecutor>> getExecutor(OperationContext* txn,
         !collection->getIndexCatalog()->findIdIndex(txn)) {
         const WhereCallbackReal whereCallback(txn, collection->ns().db());
         auto statusWithCQ =
-            CanonicalQuery::canonicalize(collection->ns(), unparsedQuery, whereCallback);
+            CanonicalQuery::canonicalize(collection->ns().ns(), unparsedQuery, whereCallback);
         if (!statusWithCQ.isOK()) {
             return statusWithCQ.getStatus();
         }
@@ -470,8 +473,10 @@ StatusWith<unique_ptr<PlanExecutor>> getExecutor(OperationContext* txn,
 
     // Might have to filter out orphaned docs.
     if (plannerOptions & QueryPlannerParams::INCLUDE_SHARD_FILTER) {
-        root = make_unique<ShardFilterStage>(
-            shardingState.getCollectionMetadata(collection->ns()), ws.get(), root.release());
+        root = make_unique<ShardFilterStage>(ShardingState::get(getGlobalServiceContext())
+                                                 ->getCollectionMetadata(collection->ns().ns()),
+                                             ws.get(),
+                                             root.release());
     }
 
     return PlanExecutor::make(txn, std::move(ws), std::move(root), collection, yieldPolicy);
@@ -599,7 +604,8 @@ StatusWith<unique_ptr<PlanExecutor>> getExecutorFind(OperationContext* txn,
     }
 
     size_t options = QueryPlannerParams::DEFAULT;
-    if (shardingState.needCollectionMetadata(txn->getClient(), nss.ns())) {
+    if (ShardingState::get(getGlobalServiceContext())
+            ->needCollectionMetadata(txn->getClient(), nss.ns())) {
         options |= QueryPlannerParams::INCLUDE_SHARD_FILTER;
     }
     return getExecutor(

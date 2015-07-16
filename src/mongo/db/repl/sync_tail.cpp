@@ -34,7 +34,6 @@
 #include "mongo/db/repl/sync_tail.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/ref.hpp>
 #include <memory>
 #include "third_party/murmurhash3/MurmurHash3.h"
 
@@ -55,6 +54,7 @@
 #include "mongo/db/repl/bgsync.h"
 #include "mongo/db/repl/minvalid.h"
 #include "mongo/db/repl/oplog.h"
+#include "mongo/db/repl/oplogreader.h"
 #include "mongo/db/repl/repl_client_info.h"
 #include "mongo/db/repl/replica_set_config.h"
 #include "mongo/db/repl/replication_coordinator_global.h"
@@ -285,7 +285,7 @@ void applyOps(const std::vector<std::vector<BSONObj>>& writerVectors,
          it != writerVectors.end();
          ++it) {
         if (!it->empty()) {
-            writerPool->schedule(func, boost::cref(*it), sync);
+            writerPool->schedule(func, stdx::cref(*it), sync);
         }
     }
     writerPool->join();
@@ -540,6 +540,11 @@ void SyncTail::oplogApplication() {
                     break;
                 }
             }
+
+            if (MONGO_FAIL_POINT(rsSyncApplyStop)) {
+                break;
+            }
+
             // keep fetching more ops as long as we haven't filled up a full batch yet
         } while (!tryPopAndWaitForMore(&txn, &ops, replCoord) &&  // tryPopAndWaitForMore returns
                                                                   // true when we need to end a

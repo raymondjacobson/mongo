@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <memory>
 
 #include "mongo/db/jsobj.h"
 #include "mongo/db/matcher/expression.h"
@@ -458,6 +459,8 @@ struct IndexScanNode : public QuerySolutionNode {
 
     QuerySolutionNode* clone() const;
 
+    bool operator==(const IndexScanNode& other) const;
+
     BSONObjSet _sorts;
 
     BSONObj indexKeyPattern;
@@ -628,7 +631,7 @@ struct LimitNode : public QuerySolutionNode {
 
     QuerySolutionNode* clone() const;
 
-    int limit;
+    long long limit;
 };
 
 struct SkipNode : public QuerySolutionNode {
@@ -655,7 +658,7 @@ struct SkipNode : public QuerySolutionNode {
 
     QuerySolutionNode* clone() const;
 
-    int skip;
+    long long skip;
 };
 
 // This is a standalone stage.

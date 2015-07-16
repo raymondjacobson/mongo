@@ -36,6 +36,9 @@
 #include "mongo/base/status_with.h"
 #include "mongo/client/read_preference.h"
 #include "mongo/client/remote_command_targeter.h"
+#include "mongo/client/replica_set_monitor.h"
+#include "mongo/db/client.h"
+#include "mongo/db/operation_context.h"
 #include "mongo/db/write_concern_options.h"
 #include "mongo/rpc/get_status_from_command_result.h"
 #include "mongo/s/catalog/dist_lock_manager.h"
@@ -52,8 +55,8 @@
 #include "mongo/s/write_ops/batched_delete_request.h"
 #include "mongo/s/write_ops/batched_insert_request.h"
 #include "mongo/s/write_ops/batched_update_document.h"
-#include "mongo/util/mongoutils/str.h"
 #include "mongo/util/log.h"
+#include "mongo/util/mongoutils/str.h"
 
 namespace mongo {
 
@@ -86,208 +89,26 @@ Status getStatus(const BatchedCommandResponse& response) {
     return Status::OK();
 }
 
-}  // namespace
-
-Status CatalogManager::insert(const string& ns,
-                              const BSONObj& doc,
-                              BatchedCommandResponse* response) {
-    unique_ptr<BatchedInsertRequest> insert(new BatchedInsertRequest());
-    insert->addToDocuments(doc);
-
-    BatchedCommandRequest request(insert.release());
-    request.setNS(NamespaceString(ns));
-    request.setWriteConcern(WriteConcernOptions::Majority);
-
-    BatchedCommandResponse dummyResponse;
-    if (response == NULL) {
-        response = &dummyResponse;
-    }
-
-    // Make sure to add ids to the request, since this is an insert operation
-    unique_ptr<BatchedCommandRequest> requestWithIds(BatchedCommandRequest::cloneWithIds(request));
-    const BatchedCommandRequest& requestToSend = requestWithIds.get() ? *requestWithIds : request;
-
-    writeConfigServerDirect(requestToSend, response);
-    return getStatus(*response);
-}
-
-Status CatalogManager::update(const string& ns,
-                              const BSONObj& query,
-                              const BSONObj& update,
-                              bool upsert,
-                              bool multi,
-                              BatchedCommandResponse* response) {
-    unique_ptr<BatchedUpdateDocument> updateDoc(new BatchedUpdateDocument());
-    updateDoc->setQuery(query);
-    updateDoc->setUpdateExpr(update);
-    updateDoc->setUpsert(upsert);
-    updateDoc->setMulti(multi);
-
-    unique_ptr<BatchedUpdateRequest> updateRequest(new BatchedUpdateRequest());
-    updateRequest->addToUpdates(updateDoc.release());
-    updateRequest->setWriteConcern(WriteConcernOptions::Majority);
-
-    BatchedCommandRequest request(updateRequest.release());
-    request.setNS(NamespaceString(ns));
-
-    BatchedCommandResponse dummyResponse;
-    if (response == NULL) {
-        response = &dummyResponse;
-    }
-
-    writeConfigServerDirect(request, response);
-    return getStatus(*response);
-}
-
-Status CatalogManager::remove(const string& ns,
-                              const BSONObj& query,
-                              int limit,
-                              BatchedCommandResponse* response) {
-    unique_ptr<BatchedDeleteDocument> deleteDoc(new BatchedDeleteDocument);
-    deleteDoc->setQuery(query);
-    deleteDoc->setLimit(limit);
-
-    unique_ptr<BatchedDeleteRequest> deleteRequest(new BatchedDeleteRequest());
-    deleteRequest->addToDeletes(deleteDoc.release());
-    deleteRequest->setWriteConcern(WriteConcernOptions::Majority);
-
-    BatchedCommandRequest request(deleteRequest.release());
-    request.setNS(NamespaceString(ns));
-
-    BatchedCommandResponse dummyResponse;
-    if (response == NULL) {
-        response = &dummyResponse;
-    }
-
-    writeConfigServerDirect(request, response);
-    return getStatus(*response);
-}
-
-Status CatalogManager::updateCollection(const std::string& collNs, const CollectionType& coll) {
-    fassert(28634, coll.validate());
-
-    BatchedCommandResponse response;
-    Status status = update(CollectionType::ConfigNS,
-                           BSON(CollectionType::fullNs(collNs)),
-                           coll.toBSON(),
-                           true,   // upsert
-                           false,  // multi
-                           &response);
-    if (!status.isOK()) {
-        return Status(status.code(),
-                      str::stream() << "collection metadata write failed: " << response.toBSON()
-                                    << "; status: " << status.toString());
-    }
-
-    return Status::OK();
-}
-
-Status CatalogManager::updateDatabase(const std::string& dbName, const DatabaseType& db) {
-    fassert(28616, db.validate());
-
-    BatchedCommandResponse response;
-    Status status = update(DatabaseType::ConfigNS,
-                           BSON(DatabaseType::name(dbName)),
-                           db.toBSON(),
-                           true,   // upsert
-                           false,  // multi
-                           &response);
-    if (!status.isOK()) {
-        return Status(status.code(),
-                      str::stream() << "database metadata write failed: " << response.toBSON()
-                                    << "; status: " << status.toString());
-    }
-
-    return Status::OK();
-}
-
-Status CatalogManager::createDatabase(const std::string& dbName) {
-    invariant(nsIsDbOnly(dbName));
-
-    // The admin and config databases should never be explicitly created. They "just exist",
-    // i.e. getDatabase will always return an entry for them.
-    invariant(dbName != "admin");
-    invariant(dbName != "config");
-
-    // Lock the database globally to prevent conflicts with simultaneous database creation.
-    auto scopedDistLock =
-        getDistLockManager()->lock(dbName, "createDatabase", Seconds{5000}, Milliseconds{500});
-    if (!scopedDistLock.isOK()) {
-        return scopedDistLock.getStatus();
-    }
-
-    // check for case sensitivity violations
-    Status status = _checkDbDoesNotExist(dbName);
-    if (!status.isOK()) {
-        return status;
-    }
-
-    // Database does not exist, pick a shard and create a new entry
-    auto newShardIdStatus = selectShardForNewDatabase(grid.shardRegistry());
-    if (!newShardIdStatus.isOK()) {
-        return newShardIdStatus.getStatus();
-    }
-
-    const ShardId& newShardId = newShardIdStatus.getValue();
-
-    log() << "Placing [" << dbName << "] on: " << newShardId;
-
-    DatabaseType db;
-    db.setName(dbName);
-    db.setPrimary(newShardId);
-    db.setSharded(false);
-
-    BatchedCommandResponse response;
-    status = insert(DatabaseType::ConfigNS, db.toBSON(), &response);
-
-    if (status.code() == ErrorCodes::DuplicateKey) {
-        return Status(ErrorCodes::NamespaceExists, "database " + dbName + " already exists");
-    }
-
-    return status;
-}
-
-// static
-StatusWith<ShardId> CatalogManager::selectShardForNewDatabase(ShardRegistry* shardRegistry) {
-    vector<ShardId> allShardIds;
-
-    shardRegistry->getAllShardIds(&allShardIds);
-    if (allShardIds.empty()) {
-        shardRegistry->reload();
-        shardRegistry->getAllShardIds(&allShardIds);
-
-        if (allShardIds.empty()) {
-            return Status(ErrorCodes::ShardNotFound, "No shards found");
-        }
-    }
-
-    ShardId candidateShardId = allShardIds[0];
-
-    auto candidateSizeStatus = shardutil::retrieveTotalShardSize(candidateShardId, shardRegistry);
-    if (!candidateSizeStatus.isOK()) {
-        return candidateSizeStatus.getStatus();
-    }
-
-    for (size_t i = 1; i < allShardIds.size(); i++) {
-        const ShardId shardId = allShardIds[i];
-
-        const auto sizeStatus = shardutil::retrieveTotalShardSize(shardId, shardRegistry);
-        if (!sizeStatus.isOK()) {
-            return sizeStatus.getStatus();
-        }
-
-        if (sizeStatus.getValue() < candidateSizeStatus.getValue()) {
-            candidateSizeStatus = sizeStatus;
-            candidateShardId = shardId;
-        }
-    }
-
-    return candidateShardId;
-}
-
-StatusWith<ShardType> CatalogManager::validateHostAsShard(ShardRegistry* shardRegistry,
-                                                          const ConnectionString& connectionString,
-                                                          const std::string* shardProposedName) {
+/**
+ * Validates that the specified connection string can serve as a shard server. In particular,
+ * this function checks that the shard can be contacted, that it is not already member of
+ * another sharded cluster and etc.
+ *
+ * @param shardRegistry Shard registry to use for opening connections to the shards.
+ * @param connectionString Connection string to be attempted as a shard host.
+ * @param shardProposedName Optional proposed name for the shard. Can be omitted in which case
+ *      a unique name for the shard will be generated from the shard's connection string. If it
+ *      is not omitted, the value cannot be the empty string.
+ *
+ * On success returns a partially initialized shard type object corresponding to the requested
+ * shard. It will have the hostName field set and optionally the name, if the name could be
+ * generated from either the proposed name or the connection string set name. The returned
+ * shard's name should be checked and if empty, one should be generated using some uniform
+ * algorithm.
+ */
+StatusWith<ShardType> validateHostAsShard(ShardRegistry* shardRegistry,
+                                          const ConnectionString& connectionString,
+                                          const std::string* shardProposedName) {
     if (connectionString.type() == ConnectionString::SYNC) {
         return {ErrorCodes::BadValue,
                 "can't use sync cluster as a shard; for a replica set, "
@@ -434,7 +255,11 @@ StatusWith<ShardType> CatalogManager::validateHostAsShard(ShardRegistry* shardRe
     return shard;
 }
 
-StatusWith<vector<string>> CatalogManager::getDBNamesListFromShard(
+/**
+ * Runs the listDatabases command on the specified host and returns the names of all databases
+ * it returns excluding those named local and admin, since they serve administrative purpose.
+ */
+StatusWith<std::vector<std::string>> getDBNamesListFromShard(
     ShardRegistry* shardRegistry, const ConnectionString& connectionString) {
     auto shardConn = shardRegistry->createConnection(connectionString);
     invariant(shardConn);
@@ -449,7 +274,7 @@ StatusWith<vector<string>> CatalogManager::getDBNamesListFromShard(
 
     auto cmdStatus = shardRegistry->runCommand(shardHost, "admin", BSON("listDatabases" << 1));
     if (!cmdStatus.isOK()) {
-        cmdStatus.getStatus();
+        return cmdStatus.getStatus();
     }
 
     const BSONObj& cmdResult = cmdStatus.getValue();
@@ -470,6 +295,332 @@ StatusWith<vector<string>> CatalogManager::getDBNamesListFromShard(
     }
 
     return dbNames;
+}
+
+}  // namespace
+
+StatusWith<string> CatalogManager::addShard(OperationContext* txn,
+                                            const std::string* shardProposedName,
+                                            const ConnectionString& shardConnectionString,
+                                            const long long maxSize) {
+    // Validate the specified connection string may serve as shard at all
+    auto shardStatus =
+        validateHostAsShard(grid.shardRegistry(), shardConnectionString, shardProposedName);
+    if (!shardStatus.isOK()) {
+        // TODO: This is a workaround for the case were we could have some bad shard being
+        // requested to be added and we put that bad connection string on the global replica set
+        // monitor registry. It needs to be cleaned up so that when a correct replica set is added,
+        // it will be recreated.
+        ReplicaSetMonitor::remove(shardConnectionString.getSetName());
+        return shardStatus.getStatus();
+    }
+
+    ShardType& shardType = shardStatus.getValue();
+
+    auto dbNamesStatus = getDBNamesListFromShard(grid.shardRegistry(), shardConnectionString);
+    if (!dbNamesStatus.isOK()) {
+        return dbNamesStatus.getStatus();
+    }
+
+    // Check that none of the existing shard candidate's dbs exist already
+    for (const string& dbName : dbNamesStatus.getValue()) {
+        StatusWith<DatabaseType> dbt = getDatabase(dbName);
+        if (dbt.isOK()) {
+            return Status(ErrorCodes::OperationFailed,
+                          str::stream() << "can't add shard "
+                                        << "'" << shardConnectionString.toString() << "'"
+                                        << " because a local database '" << dbName
+                                        << "' exists in another " << dbt.getValue().getPrimary());
+        } else if (dbt != ErrorCodes::DatabaseNotFound) {
+            return dbt.getStatus();
+        }
+    }
+
+    // If a name for a shard wasn't provided, generate one
+    if (shardType.getName().empty()) {
+        StatusWith<string> result = _generateNewShardName();
+        if (!result.isOK()) {
+            return Status(ErrorCodes::OperationFailed, "error generating new shard name");
+        }
+
+        shardType.setName(result.getValue());
+    }
+
+    if (maxSize > 0) {
+        shardType.setMaxSizeMB(maxSize);
+    }
+
+    log() << "going to add shard: " << shardType.toString();
+
+    Status result = insert(ShardType::ConfigNS, shardType.toBSON(), NULL);
+    if (!result.isOK()) {
+        log() << "error adding shard: " << shardType.toBSON() << " err: " << result.reason();
+        return result;
+    }
+
+    // Make sure the new shard is visible
+    grid.shardRegistry()->reload();
+
+    // Add all databases which were discovered on the new shard
+    for (const string& dbName : dbNamesStatus.getValue()) {
+        DatabaseType dbt;
+        dbt.setName(dbName);
+        dbt.setPrimary(shardType.getName());
+        dbt.setSharded(false);
+
+        Status status = updateDatabase(dbName, dbt);
+        if (!status.isOK()) {
+            log() << "adding shard " << shardConnectionString.toString()
+                  << " even though could not add database " << dbName;
+        }
+    }
+
+    // Record in changelog
+    BSONObjBuilder shardDetails;
+    shardDetails.append("name", shardType.getName());
+    shardDetails.append("host", shardConnectionString.toString());
+
+    logChange(txn->getClient()->clientAddress(true), "addShard", "", shardDetails.obj());
+
+    return shardType.getName();
+}
+
+Status CatalogManager::insert(const string& ns,
+                              const BSONObj& doc,
+                              BatchedCommandResponse* response) {
+    unique_ptr<BatchedInsertRequest> insert(new BatchedInsertRequest());
+    insert->addToDocuments(doc);
+
+    BatchedCommandRequest request(insert.release());
+    request.setNS(NamespaceString(ns));
+    request.setWriteConcern(WriteConcernOptions::Majority);
+
+    BatchedCommandResponse dummyResponse;
+    if (response == NULL) {
+        response = &dummyResponse;
+    }
+
+    // Make sure to add ids to the request, since this is an insert operation
+    unique_ptr<BatchedCommandRequest> requestWithIds(BatchedCommandRequest::cloneWithIds(request));
+    const BatchedCommandRequest& requestToSend = requestWithIds.get() ? *requestWithIds : request;
+
+    writeConfigServerDirect(requestToSend, response);
+    return getStatus(*response);
+}
+
+Status CatalogManager::update(const string& ns,
+                              const BSONObj& query,
+                              const BSONObj& update,
+                              bool upsert,
+                              bool multi,
+                              BatchedCommandResponse* response) {
+    unique_ptr<BatchedUpdateDocument> updateDoc(new BatchedUpdateDocument());
+    updateDoc->setQuery(query);
+    updateDoc->setUpdateExpr(update);
+    updateDoc->setUpsert(upsert);
+    updateDoc->setMulti(multi);
+
+    unique_ptr<BatchedUpdateRequest> updateRequest(new BatchedUpdateRequest());
+    updateRequest->addToUpdates(updateDoc.release());
+    updateRequest->setWriteConcern(WriteConcernOptions::Majority);
+
+    BatchedCommandRequest request(updateRequest.release());
+    request.setNS(NamespaceString(ns));
+
+    BatchedCommandResponse dummyResponse;
+    if (response == NULL) {
+        response = &dummyResponse;
+    }
+
+    writeConfigServerDirect(request, response);
+    return getStatus(*response);
+}
+
+Status CatalogManager::remove(const string& ns,
+                              const BSONObj& query,
+                              int limit,
+                              BatchedCommandResponse* response) {
+    unique_ptr<BatchedDeleteDocument> deleteDoc(new BatchedDeleteDocument);
+    deleteDoc->setQuery(query);
+    deleteDoc->setLimit(limit);
+
+    unique_ptr<BatchedDeleteRequest> deleteRequest(new BatchedDeleteRequest());
+    deleteRequest->addToDeletes(deleteDoc.release());
+    deleteRequest->setWriteConcern(WriteConcernOptions::Majority);
+
+    BatchedCommandRequest request(deleteRequest.release());
+    request.setNS(NamespaceString(ns));
+
+    BatchedCommandResponse dummyResponse;
+    if (response == NULL) {
+        response = &dummyResponse;
+    }
+
+    writeConfigServerDirect(request, response);
+    return getStatus(*response);
+}
+
+Status CatalogManager::updateCollection(const std::string& collNs, const CollectionType& coll) {
+    fassert(28634, coll.validate());
+
+    BatchedCommandResponse response;
+    Status status = update(CollectionType::ConfigNS,
+                           BSON(CollectionType::fullNs(collNs)),
+                           coll.toBSON(),
+                           true,   // upsert
+                           false,  // multi
+                           &response);
+    if (!status.isOK()) {
+        return Status(status.code(),
+                      str::stream() << "collection metadata write failed: " << response.toBSON()
+                                    << "; status: " << status.toString());
+    }
+
+    return Status::OK();
+}
+
+Status CatalogManager::updateDatabase(const std::string& dbName, const DatabaseType& db) {
+    fassert(28616, db.validate());
+
+    BatchedCommandResponse response;
+    Status status = update(DatabaseType::ConfigNS,
+                           BSON(DatabaseType::name(dbName)),
+                           db.toBSON(),
+                           true,   // upsert
+                           false,  // multi
+                           &response);
+    if (!status.isOK()) {
+        return Status(status.code(),
+                      str::stream() << "database metadata write failed: " << response.toBSON()
+                                    << "; status: " << status.toString());
+    }
+
+    return Status::OK();
+}
+
+Status CatalogManager::createDatabase(const std::string& dbName) {
+    invariant(nsIsDbOnly(dbName));
+
+    // The admin and config databases should never be explicitly created. They "just exist",
+    // i.e. getDatabase will always return an entry for them.
+    invariant(dbName != "admin");
+    invariant(dbName != "config");
+
+    // Lock the database globally to prevent conflicts with simultaneous database creation.
+    auto scopedDistLock =
+        getDistLockManager()->lock(dbName, "createDatabase", Seconds{5}, Milliseconds{500});
+    if (!scopedDistLock.isOK()) {
+        return scopedDistLock.getStatus();
+    }
+
+    // check for case sensitivity violations
+    Status status = _checkDbDoesNotExist(dbName, nullptr);
+    if (!status.isOK()) {
+        return status;
+    }
+
+    // Database does not exist, pick a shard and create a new entry
+    auto newShardIdStatus = selectShardForNewDatabase(grid.shardRegistry());
+    if (!newShardIdStatus.isOK()) {
+        return newShardIdStatus.getStatus();
+    }
+
+    const ShardId& newShardId = newShardIdStatus.getValue();
+
+    log() << "Placing [" << dbName << "] on: " << newShardId;
+
+    DatabaseType db;
+    db.setName(dbName);
+    db.setPrimary(newShardId);
+    db.setSharded(false);
+
+    BatchedCommandResponse response;
+    status = insert(DatabaseType::ConfigNS, db.toBSON(), &response);
+
+    if (status.code() == ErrorCodes::DuplicateKey) {
+        return Status(ErrorCodes::NamespaceExists, "database " + dbName + " already exists");
+    }
+
+    return status;
+}
+
+// static
+StatusWith<ShardId> CatalogManager::selectShardForNewDatabase(ShardRegistry* shardRegistry) {
+    vector<ShardId> allShardIds;
+
+    shardRegistry->getAllShardIds(&allShardIds);
+    if (allShardIds.empty()) {
+        shardRegistry->reload();
+        shardRegistry->getAllShardIds(&allShardIds);
+
+        if (allShardIds.empty()) {
+            return Status(ErrorCodes::ShardNotFound, "No shards found");
+        }
+    }
+
+    ShardId candidateShardId = allShardIds[0];
+
+    auto candidateSizeStatus = shardutil::retrieveTotalShardSize(candidateShardId, shardRegistry);
+    if (!candidateSizeStatus.isOK()) {
+        return candidateSizeStatus.getStatus();
+    }
+
+    for (size_t i = 1; i < allShardIds.size(); i++) {
+        const ShardId shardId = allShardIds[i];
+
+        const auto sizeStatus = shardutil::retrieveTotalShardSize(shardId, shardRegistry);
+        if (!sizeStatus.isOK()) {
+            return sizeStatus.getStatus();
+        }
+
+        if (sizeStatus.getValue() < candidateSizeStatus.getValue()) {
+            candidateSizeStatus = sizeStatus;
+            candidateShardId = shardId;
+        }
+    }
+
+    return candidateShardId;
+}
+
+Status CatalogManager::enableSharding(const std::string& dbName) {
+    invariant(nsIsDbOnly(dbName));
+
+    DatabaseType db;
+
+    // Lock the database globally to prevent conflicts with simultaneous database
+    // creation/modification.
+    auto scopedDistLock =
+        getDistLockManager()->lock(dbName, "enableSharding", Seconds{5}, Milliseconds{500});
+    if (!scopedDistLock.isOK()) {
+        return scopedDistLock.getStatus();
+    }
+
+    // Check for case sensitivity violations
+    Status status = _checkDbDoesNotExist(dbName, &db);
+    if (status.isOK()) {
+        // Database does not exist, create a new entry
+        auto newShardIdStatus = selectShardForNewDatabase(grid.shardRegistry());
+        if (!newShardIdStatus.isOK()) {
+            return newShardIdStatus.getStatus();
+        }
+
+        const ShardId& newShardId = newShardIdStatus.getValue();
+
+        log() << "Placing [" << dbName << "] on: " << newShardId;
+
+        db.setName(dbName);
+        db.setPrimary(newShardId);
+        db.setSharded(true);
+    } else if (status.code() == ErrorCodes::NamespaceExists) {
+        // Database exists, so just update it
+        db.setSharded(true);
+    } else {
+        return status;
+    }
+
+    log() << "Enabling sharding for database [" << dbName << "] in config db";
+
+    return updateDatabase(dbName, db);
 }
 
 }  // namespace mongo

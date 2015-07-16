@@ -29,16 +29,18 @@
 #pragma once
 
 #include <asio.hpp>
-#include <atomic>
 #include <boost/optional.hpp>
+#include <memory>
+#include <string>
 #include <system_error>
-#include <thread>
 #include <unordered_map>
 
+#include "mongo/base/status.h"
 #include "mongo/client/connection_pool.h"
 #include "mongo/client/remote_command_runner.h"
 #include "mongo/executor/network_interface.h"
 #include "mongo/platform/atomic_word.h"
+#include "mongo/rpc/protocol.h"
 #include "mongo/stdx/condition_variable.h"
 #include "mongo/stdx/mutex.h"
 #include "mongo/stdx/thread.h"
@@ -70,6 +72,9 @@ public:
     bool inShutdown() const;
 
 private:
+    using ResponseStatus = TaskExecutor::ResponseStatus;
+    using NetworkInterface::RemoteCommandCompletionFn;
+
     enum class State { kReady, kRunning, kShutdown };
 
     /**
@@ -77,14 +82,38 @@ private:
      */
     class AsyncConnection {
     public:
-        AsyncConnection(ConnectionPool::ConnectionPtr&& booststrapConn,
-                        asio::ip::tcp::socket&& sock);
+        AsyncConnection(asio::ip::tcp::socket&& sock, rpc::ProtocolSet serverProtocols);
 
-        asio::ip::tcp::socket* sock();
+        AsyncConnection(asio::ip::tcp::socket&& sock,
+                        rpc::ProtocolSet serverProtocols,
+                        boost::optional<ConnectionPool::ConnectionPtr>&& bootstrapConn);
+
+        asio::ip::tcp::socket& sock();
+
+        rpc::ProtocolSet serverProtocols() const;
+        rpc::ProtocolSet clientProtocols() const;
+
+// Explicit move construction and assignment to support MSVC
+#if defined(_MSC_VER) && _MSC_VER < 1900
+        AsyncConnection(AsyncConnection&&);
+        AsyncConnection& operator=(AsyncConnection&&);
+#else
+        AsyncConnection(AsyncConnection&&) = default;
+        AsyncConnection& operator=(AsyncConnection&&) = default;
+#endif
 
     private:
-        ConnectionPool::ConnectionPtr _bootstrapConn;
         asio::ip::tcp::socket _sock;
+
+        rpc::ProtocolSet _serverProtocols;
+        rpc::ProtocolSet _clientProtocols{rpc::supports::kAll};
+
+        /**
+         * The bootstrap connection we use to run auth. This will eventually go away when we finish
+         * implementing async auth, but for now we need to keep it alive so that the socket it
+         * creates stays open.
+         */
+        boost::optional<ConnectionPool::ConnectionPtr> _bootstrapConn;
     };
 
     /**
@@ -108,6 +137,7 @@ private:
         AsyncConnection* connection();
 
         void connect(ConnectionPool* const pool, asio::io_service* service, Date_t now);
+        void setConnection(AsyncConnection&& conn);
         bool connected() const;
 
         void finish(const TaskExecutor::ResponseStatus& status);
@@ -119,7 +149,14 @@ private:
         Date_t start() const;
 
         Message* toSend();
+
+        void setToSend(Message&& message);
+
         Message* toRecv();
+
+        rpc::Protocol operationProtocol() const;
+
+        void setOperationProtocol(rpc::Protocol proto);
 
     private:
         enum class OpState {
@@ -141,37 +178,78 @@ private:
          */
         boost::optional<AsyncConnection> _connection;
 
+        /**
+         * The RPC protocol used for this operation. We wrap it in an optional as it
+         * is not known until we obtain a connection.
+         */
+        boost::optional<rpc::Protocol> _operationProtocol;
+
         const Date_t _start;
 
         OpState _state;
         AtomicUInt64 _canceled;
 
-        Message _toSend;
+        /**
+         * The outgoing command associated with this operation.
+         */
+        boost::optional<Message> _toSend;
+
         Message _toRecv;
         MSGHEADER::Value _header;
 
         const int _id;
     };
 
-    void _messageFromRequest(const RemoteCommandRequest& request,
-                             Message* toSend,
-                             bool useOpCommand = false);
+    void _asyncRunCommand(AsyncOp* op);
+
+    /**
+     * Wraps a completion handler in pre-condition checks.
+     * When we resume after an asynchronous call, we may find the following:
+     *    - the AsyncOp has been canceled in the interim (via cancelCommand())
+     *    - the asynchronous call has returned a non-OK error code
+     * Should both conditions be present, we handle cancelation over errors. States use
+     * _validateAndRun() to perform these checks before advancing the state machine.
+     */
+    template <typename Handler>
+    void _validateAndRun(AsyncOp* op, std::error_code ec, Handler&& handler) {
+        if (op->canceled())
+            return _completeOperation(op,
+                                      Status(ErrorCodes::CallbackCanceled, "Callback canceled"));
+        if (ec)
+            return _networkErrorCallback(op, ec);
+
+        handler();
+    }
+
+    std::unique_ptr<Message> _messageFromRequest(const RemoteCommandRequest& request,
+                                                 rpc::Protocol protocol);
 
     void _asyncSendSimpleMessage(AsyncOp* op, const asio::const_buffer& buf);
 
+    // Connection
+    void _connectASIO(AsyncOp* op);
+    void _connectWithDBClientConnection(AsyncOp* op);
+    void _setupSocket(AsyncOp* op, const asio::ip::tcp::resolver::iterator& endpoints);
+    void _authenticate(AsyncOp* op);
+    void _sslHandshake(AsyncOp* op);
+
+    // Communication state machine
+    void _beginCommunication(AsyncOp* op);
     void _completedWriteCallback(AsyncOp* op);
     void _networkErrorCallback(AsyncOp* op, const std::error_code& ec);
 
     void _completeOperation(AsyncOp* op, const TaskExecutor::ResponseStatus& resp);
 
-    void _keepAlive(AsyncOp* op);
     void _recvMessageHeader(AsyncOp* op);
     void _recvMessageBody(AsyncOp* op);
     void _receiveResponse(AsyncOp* op);
+
     void _signalWorkAvailable_inlock();
 
     asio::io_service _io_service;
     stdx::thread _serviceRunner;
+
+    asio::ip::tcp::resolver _resolver;
 
     std::atomic<State> _state;
 

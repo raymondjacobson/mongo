@@ -200,7 +200,9 @@ public:
 
     virtual long long getTerm();
 
-    virtual bool updateTerm(long long term);
+    virtual Status updateTerm(long long term);
+
+    virtual void onSnapshotCreate(OpTime timeOfSnapshot);
 
 private:
     const ReplSettings _settings;

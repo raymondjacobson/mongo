@@ -247,6 +247,11 @@ ReplicaSetConfig ReplicationCoordinatorImpl::getReplicaSetConfig_forTest() {
     return _rsConfig;
 }
 
+OpTime ReplicationCoordinatorImpl::getCurrentCommittedSnapshot_forTest() {
+    stdx::lock_guard<stdx::mutex> lk(_mutex);
+    return *_currentCommittedSnapshot;
+}
+
 void ReplicationCoordinatorImpl::_updateLastVote(const LastVote& lastVote) {
     _topCoord->loadLastVote(lastVote);
 }
@@ -347,7 +352,7 @@ void ReplicationCoordinatorImpl::_finishLoadLocalConfig(
         lk.unlock();
     }
     _performPostMemberStateUpdateAction(action);
-    _externalState->startThreads();
+    _externalState->startThreads(&_replExecutor);
 }
 
 void ReplicationCoordinatorImpl::startReplication(OperationContext* txn) {
@@ -611,6 +616,7 @@ void ReplicationCoordinatorImpl::_addSlaveInfo_inlock(const SlaveInfo& slaveInfo
     invariant(getReplicationMode() == modeMasterSlave);
     _slaveInfo.push_back(slaveInfo);
 
+    _updateLastCommittedOpTime_inlock();
     // Wake up any threads waiting for replication that now have their replication
     // check satisfied
     _wakeReadyWaiters_inlock();
@@ -620,6 +626,7 @@ void ReplicationCoordinatorImpl::_updateSlaveInfoOptime_inlock(SlaveInfo* slaveI
                                                                const OpTime& opTime) {
     slaveInfo->opTime = opTime;
 
+    _updateLastCommittedOpTime_inlock();
     // Wake up any threads waiting for replication that now have their replication
     // check satisfied
     _wakeReadyWaiters_inlock();
@@ -786,8 +793,13 @@ ReadAfterOpTimeResponse ReplicationCoordinatorImpl::waitUntilOpTime(
 
     Timer timer;
     stdx::unique_lock<stdx::mutex> lock(_mutex);
+    auto loopCondition = [this, settings, ts] {
+        return settings.isReadCommitted()
+            ? !_currentCommittedSnapshot || ts > *_currentCommittedSnapshot
+            : ts > _getMyLastOptime_inlock();
+    };
 
-    while (ts > _getMyLastOptime_inlock()) {
+    while (loopCondition()) {
         Status interruptedStatus = txn->checkForInterruptNoAssert();
         if (!interruptedStatus.isOK()) {
             return ReadAfterOpTimeResponse(interruptedStatus, Milliseconds(timer.millis()));
@@ -799,10 +811,13 @@ ReadAfterOpTimeResponse ReplicationCoordinatorImpl::waitUntilOpTime(
         }
 
         stdx::condition_variable condVar;
+        WriteConcernOptions writeConcern;
+        writeConcern.wMode = WriteConcernOptions::kMajority;
+
         WaiterInfo waitInfo(&_opTimeWaiterList,
                             txn->getOpID(),
                             &ts,
-                            nullptr,  // Don't care about write concern.
+                            settings.isReadCommitted() ? &writeConcern : nullptr,
                             &condVar);
 
         if (CurOp::get(txn)->isMaxTimeSet()) {
@@ -847,8 +862,7 @@ Status ReplicationCoordinatorImpl::_setLastOptime_inlock(const UpdatePositionArg
         return Status(ErrorCodes::NodeNotFound, errmsg);
     }
 
-    if (args.rid == _getMyRID_inlock() ||
-        args.memberId == _rsConfig.getMemberAt(_selfIndex).getId()) {
+    if (args.memberId == _rsConfig.getMemberAt(_selfIndex).getId()) {
         // Do not let remote nodes tell us what our optime is.
         return Status::OK();
     }
@@ -945,7 +959,14 @@ bool ReplicationCoordinatorImpl::_doneWaitingForReplication_inlock(
     if (!writeConcern.wMode.empty()) {
         StringData patternName;
         if (writeConcern.wMode == WriteConcernOptions::kMajority) {
-            patternName = ReplicaSetConfig::kMajorityWriteConcernModeName;
+            if (_externalState->snapshotsEnabled()) {
+                if (!_currentCommittedSnapshot) {
+                    return false;
+                }
+                return opTime <= *_currentCommittedSnapshot;
+            } else {
+                patternName = ReplicaSetConfig::kMajorityWriteConcernModeName;
+            }
         } else {
             patternName = writeConcern.wMode;
         }
@@ -1521,8 +1542,14 @@ void ReplicationCoordinatorImpl::appendSlaveInfoData(BSONObjBuilder* result) {
              ++itr) {
             BSONObjBuilder entry(replicationProgress.subobjStart());
             entry.append("rid", itr->rid);
-            // TODO(siyuan) Output term of OpTime
-            entry.append("optime", itr->opTime.getTimestamp());
+            if (isV1ElectionProtocol()) {
+                BSONObjBuilder opTime(entry.subobjStart("optime"));
+                opTime.append("ts", itr->opTime.getTimestamp());
+                opTime.append("term", itr->opTime.getTerm());
+                opTime.done();
+            } else {
+                entry.append("optime", itr->opTime.getTimestamp());
+            }
             entry.append("host", itr->hostAndPort.toString());
             if (getReplicationMode() == modeReplSet) {
                 if (_selfIndex == -1) {
@@ -1977,7 +2004,7 @@ Status ReplicationCoordinatorImpl::processReplSetInitiate(OperationContext* txn,
     if (status.isOK()) {
         // Create the oplog with the first entry, and start repl threads.
         _externalState->initiateOplog(txn);
-        _externalState->startThreads();
+        _externalState->startThreads(&_replExecutor);
     }
     return status;
 }
@@ -2023,7 +2050,6 @@ ReplicationCoordinatorImpl::_updateMemberStateFromTopologyCoordinator_inlock() {
             info->master = false;
             info->condVar->notify_all();
         }
-        _isWaitingForDrainToComplete = false;
         _canAcceptNonLocalWrites = false;
         result = kActionCloseAllConnections;
     } else {
@@ -2052,6 +2078,34 @@ ReplicationCoordinatorImpl::_updateMemberStateFromTopologyCoordinator_inlock() {
         // to take a snapshot, if it is running. This is because it never takes snapshots when not
         // in readable states.
         _externalState->forceSnapshotCreation();
+    }
+
+    if (newState.rollback()) {
+        // When we start rollback, we need to drop all snapshots since we may need to create
+        // out-of-order snapshots. This would be necessary even if the SnapshotName was completely
+        // monotonically increasing because we don't necessarily have a snapshot of every write.
+        // If we didn't drop all snapshots on rollback it could lead to the following situation:
+        //
+        //  |--------|-------------|-------------|
+        //  | OpTime | HasSnapshot | Committed   |
+        //  |--------|-------------|-------------|
+        //  | (0, 1) | *           | *           |
+        //  | (0, 2) | *           | ROLLED BACK |
+        //  | (1, 2) |             | *           |
+        //  |--------|-------------|-------------|
+        //
+        // When we try to make (1,2) the commit point, we'd find (0,2) as the newest snapshot
+        // before the commit point, but it would be invalid to mark it as the committed snapshot
+        // since it was never committed.
+        //
+        // TODO SERVER-19209 We also need to clear snapshots before a resync.
+        _dropAllSnapshots_inlock();
+    }
+
+    if (_memberState.rollback()) {
+        // Ensure that no snapshots were created while we were in rollback.
+        invariant(!_currentCommittedSnapshot);
+        invariant(_uncommittedSnapshots.empty());
     }
 
     _memberState = newState;
@@ -2190,6 +2244,7 @@ ReplicationCoordinatorImpl::_setCurrentRSConfig_inlock(const ReplicaSetConfig& n
         // nodes in the set will contact us.
         _startHeartbeats();
     }
+    _updateLastCommittedOpTime_inlock();
     _wakeReadyWaiters_inlock();
     return action;
 }
@@ -2463,46 +2518,52 @@ void ReplicationCoordinatorImpl::_updateLastCommittedOpTime_inlock() {
     if (!_getMemberState_inlock().primary()) {
         return;
     }
-    StatusWith<ReplicaSetTagPattern> tagPattern =
-        _rsConfig.findCustomWriteMode(ReplicaSetConfig::kMajorityWriteConcernModeName);
-    invariant(tagPattern.isOK());
-    ReplicaSetTagMatch matcher{tagPattern.getValue()};
 
     std::vector<OpTime> votingNodesOpTimes;
 
     for (const auto& sI : _slaveInfo) {
         auto memberConfig = _rsConfig.findMemberByID(sI.memberId);
         invariant(memberConfig);
-        for (auto tagIt = memberConfig->tagsBegin(); tagIt != memberConfig->tagsEnd(); ++tagIt) {
-            if (matcher.update(*tagIt)) {
-                votingNodesOpTimes.push_back(sI.opTime);
-                break;
-            }
+        if (memberConfig->isVoter()) {
+            votingNodesOpTimes.push_back(sI.opTime);
         }
     }
+
     invariant(votingNodesOpTimes.size() > 0);
+    if (votingNodesOpTimes.size() < static_cast<unsigned long>(_rsConfig.getMajorityVoteCount())) {
+        return;
+    }
+
     std::sort(votingNodesOpTimes.begin(), votingNodesOpTimes.end());
 
-    // Use the index of the minimum quorum in the vector of nodes.
-    auto newCommittedOpTime = votingNodesOpTimes[(votingNodesOpTimes.size() - 1) / 2];
-    if (newCommittedOpTime != _lastCommittedOpTime) {
-        _lastCommittedOpTime = newCommittedOpTime;
-        // TODO SERVER-19208 Also need to updateCommittedSnapshot on secondaries.
-        if (auto newSnapshotTs = _externalState->updateCommittedSnapshot(newCommittedOpTime)) {
-            // TODO use this Timestamp for the following things:
-            // * SERVER-19206 make w:majority writes block until they are in the committed snapshot.
-            // * SERVER-19211 make readCommitted + afterOptime block until the optime is in the
-            //   committed view.
-            // * SERVER-19212 make new indexes not be used for any queries until the index is in the
-            //   committed view.
-        }
-    }
+    // need the majority to have this OpTime
+    _setLastCommittedOpTime_inlock(
+        votingNodesOpTimes[votingNodesOpTimes.size() - _rsConfig.getMajorityVoteCount()]);
 }
 
 void ReplicationCoordinatorImpl::_setLastCommittedOpTime(const OpTime& committedOpTime) {
     stdx::unique_lock<stdx::mutex> lk(_mutex);
-    if (committedOpTime > _lastCommittedOpTime) {
-        _lastCommittedOpTime = committedOpTime;
+    _setLastCommittedOpTime_inlock(committedOpTime);
+}
+
+void ReplicationCoordinatorImpl::_setLastCommittedOpTime_inlock(const OpTime& committedOpTime) {
+    if (committedOpTime <= _lastCommittedOpTime)
+        return;  // This may have come from an out-of-order heartbeat. Ignore it.
+
+    _lastCommittedOpTime = committedOpTime;
+
+    if (!_uncommittedSnapshots.empty() && _uncommittedSnapshots.front() <= committedOpTime) {
+        // At least one uncommitted snapshot is ready to be blessed as committed.
+
+        // Seek to the first entry > the commit point. Previous element must be <=.
+        const auto onePastCommitPoint = std::upper_bound(
+            _uncommittedSnapshots.begin(), _uncommittedSnapshots.end(), committedOpTime);
+        const auto newSnapshot = *std::prev(onePastCommitPoint);
+
+        // Forget about all snapshots <= the new commit point.
+        _uncommittedSnapshots.erase(_uncommittedSnapshots.begin(), onePastCommitPoint);
+
+        _updateCommittedSnapshot_inlock(newSnapshot);
     }
 }
 
@@ -2720,7 +2781,17 @@ void ReplicationCoordinatorImpl::_getTerm_helper(const ReplicationExecutor::Call
     *term = _topCoord->getTerm();
 }
 
-bool ReplicationCoordinatorImpl::updateTerm(long long term) {
+Status ReplicationCoordinatorImpl::updateTerm(long long term) {
+    if (!isV1ElectionProtocol()) {
+        // Do not update if not in V1 protocol.
+        return Status::OK();
+    }
+
+    // Term is only valid if we are replicating.
+    if (getReplicationMode() != modeReplSet) {
+        return {ErrorCodes::BadValue, "cannot supply 'term' without active replication"};
+    }
+
     bool updated = false;
     CBHStatus cbh =
         _replExecutor.scheduleWork(stdx::bind(&ReplicationCoordinatorImpl::_updateTerm_helper,
@@ -2730,11 +2801,16 @@ bool ReplicationCoordinatorImpl::updateTerm(long long term) {
                                               &updated,
                                               nullptr));
     if (cbh.getStatus() == ErrorCodes::ShutdownInProgress) {
-        return false;
+        return cbh.getStatus();
     }
     fassert(28670, cbh.getStatus());
     _replExecutor.wait(cbh.getValue());
-    return updated;
+
+    if (updated) {
+        return {ErrorCodes::StaleTerm, "Replication term of this node was stale; retry query"};
+    }
+
+    return Status::OK();
 }
 
 bool ReplicationCoordinatorImpl::updateTerm_forTest(long long term) {
@@ -2784,6 +2860,53 @@ bool ReplicationCoordinatorImpl::_updateTerm_incallback(long long term, Handle* 
         }
     }
     return updated;
+}
+
+void ReplicationCoordinatorImpl::onSnapshotCreate(OpTime timeOfSnapshot) {
+    stdx::lock_guard<stdx::mutex> lock(_mutex);
+    invariant(_memberState.readable());  // Snapshots can only be taken in a readable state.
+
+    if (timeOfSnapshot <= _lastCommittedOpTime) {
+        // This snapshot is ready to be marked as committed.
+        invariant(_uncommittedSnapshots.empty());
+        _updateCommittedSnapshot_inlock(timeOfSnapshot);
+        return;
+    }
+
+    if (!_uncommittedSnapshots.empty()) {
+        if (timeOfSnapshot == _uncommittedSnapshots.back()) {
+            // This is already in the set. Don't want to double add.
+            return;
+        }
+        invariant(timeOfSnapshot > _uncommittedSnapshots.back());
+    }
+    _uncommittedSnapshots.push_back(timeOfSnapshot);
+}
+
+void ReplicationCoordinatorImpl::_updateCommittedSnapshot_inlock(OpTime newCommittedSnapshot) {
+    invariant(!newCommittedSnapshot.isNull());
+    invariant(newCommittedSnapshot <= _lastCommittedOpTime);
+    if (_currentCommittedSnapshot)
+        invariant(newCommittedSnapshot > *_currentCommittedSnapshot);
+    if (!_uncommittedSnapshots.empty())
+        invariant(newCommittedSnapshot < _uncommittedSnapshots.front());
+
+    _currentCommittedSnapshot = newCommittedSnapshot;
+
+    _externalState->updateCommittedSnapshot(newCommittedSnapshot);
+
+    // TODO use _currentCommittedSnapshot for the following things:
+    // * SERVER-19206 make w:majority writes block until they are in the committed snapshot.
+    // * SERVER-19211 make readCommitted + afterOptime block until the optime is in the
+    //   committed view.
+    // * SERVER-19212 make new indexes not be used for any queries until the index is in the
+    //   committed view.
+}
+
+void ReplicationCoordinatorImpl::_dropAllSnapshots_inlock() {
+    _uncommittedSnapshots.clear();
+    _currentCommittedSnapshot = {};
+    _externalState->dropAllSnapshots();
 }
 
 }  // namespace repl

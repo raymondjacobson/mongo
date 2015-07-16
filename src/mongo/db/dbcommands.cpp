@@ -1,32 +1,30 @@
-// dbcommands.cpp
-
 /**
-*    Copyright (C) 2012-2014 MongoDB Inc.
-*
-*    This program is free software: you can redistribute it and/or  modify
-*    it under the terms of the GNU Affero General Public License, version 3,
-*    as published by the Free Software Foundation.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU Affero General Public License for more details.
-*
-*    You should have received a copy of the GNU Affero General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
-*    As a special exception, the copyright holders give permission to link the
-*    code of portions of this program with the OpenSSL library under certain
-*    conditions as described in each individual source file and distribute
-*    linked combinations including the program with the OpenSSL library. You
-*    must comply with the GNU Affero General Public License in all respects for
-*    all of the code used other than as permitted herein. If you modify file(s)
-*    with this exception, you may extend this exception to your version of the
-*    file(s), but you are not obligated to do so. If you do not wish to do so,
-*    delete this exception statement from your version. If you delete this
-*    exception statement from all source files in the program, then also delete
-*    it in the license file.
-*/
+ *    Copyright (C) 2012-2015 MongoDB Inc.
+ *
+ *    This program is free software: you can redistribute it and/or  modify
+ *    it under the terms of the GNU Affero General Public License, version 3,
+ *    as published by the Free Software Foundation.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Affero General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Affero General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *    As a special exception, the copyright holders give permission to link the
+ *    code of portions of this program with the OpenSSL library under certain
+ *    conditions as described in each individual source file and distribute
+ *    linked combinations including the program with the OpenSSL library. You
+ *    must comply with the GNU Affero General Public License in all respects for
+ *    all of the code used other than as permitted herein. If you modify file(s)
+ *    with this exception, you may extend this exception to your version of the
+ *    file(s), but you are not obligated to do so. If you do not wish to do so,
+ *    delete this exception statement from your version. If you delete this
+ *    exception statement from all source files in the program, then also delete
+ *    it in the license file.
+ */
 
 #define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kCommand
 
@@ -49,28 +47,23 @@
 #include "mongo/db/auth/user_management_commands_parser.h"
 #include "mongo/db/auth/user_name.h"
 #include "mongo/db/background.h"
-#include "mongo/db/clientcursor.h"
 #include "mongo/db/catalog/coll_mod.h"
 #include "mongo/db/catalog/collection.h"
 #include "mongo/db/catalog/collection_catalog_entry.h"
 #include "mongo/db/catalog/create_collection.h"
 #include "mongo/db/catalog/drop_collection.h"
 #include "mongo/db/catalog/drop_database.h"
-#include "mongo/db/catalog/database_catalog_entry.h"
 #include "mongo/db/clientcursor.h"
 #include "mongo/db/commands.h"
 #include "mongo/db/commands/server_status.h"
 #include "mongo/db/commands/shutdown.h"
 #include "mongo/db/concurrency/write_conflict_exception.h"
-#include "mongo/db/db.h"
 #include "mongo/db/db_raii.h"
 #include "mongo/db/dbdirectclient.h"
 #include "mongo/db/dbhelpers.h"
-#include "mongo/db/service_context_d.h"
-#include "mongo/db/service_context.h"
 #include "mongo/db/index_builder.h"
-#include "mongo/db/index/index_access_method.h"
 #include "mongo/db/index/index_descriptor.h"
+#include "mongo/db/index/index_access_method.h"
 #include "mongo/db/instance.h"
 #include "mongo/db/introspect.h"
 #include "mongo/db/jsobj.h"
@@ -79,7 +72,6 @@
 #include "mongo/db/lasterror.h"
 #include "mongo/db/namespace_string.h"
 #include "mongo/db/op_observer.h"
-#include "mongo/db/operation_context_impl.h"
 #include "mongo/db/ops/insert.h"
 #include "mongo/db/query/get_executor.h"
 #include "mongo/db/query/internal_plans.h"
@@ -91,15 +83,13 @@
 #include "mongo/db/repl/repl_client_info.h"
 #include "mongo/db/repl/repl_settings.h"
 #include "mongo/db/repl/replication_coordinator_global.h"
-#include "mongo/db/storage/mmap_v1/dur_stats.h"
-#include "mongo/db/storage/storage_engine.h"
+#include "mongo/db/s/sharding_state.h"
 #include "mongo/db/write_concern.h"
 #include "mongo/rpc/request_interface.h"
 #include "mongo/rpc/reply_builder_interface.h"
 #include "mongo/rpc/metadata.h"
 #include "mongo/rpc/metadata/server_selection_metadata.h"
 #include "mongo/rpc/metadata/sharding_metadata.h"
-#include "mongo/s/d_state.h"
 #include "mongo/s/stale_exception.h"  // for SendStaleConfigException
 #include "mongo/scripting/engine.h"
 #include "mongo/util/fail_point_service.h"
@@ -681,6 +671,7 @@ public:
         while (c->more())
             PRINT(c->nextSafe());
     }
+
 } cmdFileMD5;
 
 
@@ -888,7 +879,7 @@ public:
             return false;
         }
 
-        result.append("ns", nss);
+        result.append("ns", nss.ns());
 
         long long size = collection->dataSize(txn) / scale;
         long long numRecords = collection->numRecords(txn);
@@ -1321,7 +1312,7 @@ bool Command::run(OperationContext* txn,
     // TODO: refactor out of here as part of SERVER-18326
     bool isReplSet = replCoord->getReplicationMode() == repl::ReplicationCoordinator::modeReplSet;
 
-    if (isReplSet && shardingState.enabled()) {
+    if (isReplSet && ShardingState::get(txn)->enabled()) {
         rpc::ShardingMetadata(
             repl::ReplClientInfo::forClient(txn->getClient()).getLastOp().getTimestamp(),
             replCoord->getElectionId()).writeToMetadata(&metadataBob);

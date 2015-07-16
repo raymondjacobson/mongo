@@ -42,13 +42,14 @@
 #include "mongo/db/db_raii.h"
 #include "mongo/db/exec/working_set_common.h"
 #include "mongo/db/service_context.h"
+#include "mongo/db/repl/replication_coordinator.h"
 #include "mongo/db/query/cursor_responses.h"
 #include "mongo/db/query/explain.h"
 #include "mongo/db/query/find.h"
 #include "mongo/db/query/get_executor.h"
+#include "mongo/db/s/sharding_state.h"
 #include "mongo/db/server_parameters.h"
 #include "mongo/db/stats/counters.h"
-#include "mongo/s/d_state.h"
 #include "mongo/s/stale_exception.h"
 #include "mongo/util/log.h"
 #include "mongo/util/scopeguard.h"
@@ -170,9 +171,9 @@ public:
      *   6) Save state for getMore.
      *   7) Generate response to send to the client.
      *
-     * TODO: Rather than using the sharding version available in thread-local storage
-     * (i.e. call to shardingState.needCollectionMetadata() below), shard version
-     * information should be passed as part of the command parameter.
+     * TODO: Rather than using the sharding version available in thread-local storage (i.e. the
+     *       call to ShardingState::needCollectionMetadata() below), shard version information
+     *       should be passed as part of the command parameter.
      */
     bool run(OperationContext* txn,
              const std::string& dbname,
@@ -206,8 +207,18 @@ public:
 
         auto& lpq = lpqStatus.getValue();
 
+        // Validate term, if provided.
+        if (auto term = lpq->getReplicationTerm()) {
+            auto replCoord = repl::ReplicationCoordinator::get(txn);
+            Status status = replCoord->updateTerm(*term);
+            // Note: updateTerm returns ok if term stayed the same.
+            if (!status.isOK()) {
+                return appendCommandStatus(result, status);
+            }
+        }
+
         // Fill out curop information.
-        int ntoreturn = lpq->getBatchSize().value_or(0);
+        long long ntoreturn = lpq->getBatchSize().value_or(0);
         beginQueryOp(txn, nss, cmdObj, ntoreturn, lpq->getSkip());
 
         // 1b) Finish the parsing step by using the LiteParsedQuery to create a CanonicalQuery.
@@ -225,10 +236,12 @@ public:
         const int dbProfilingLevel =
             ctx.getDb() ? ctx.getDb()->getProfilingLevel() : serverGlobalParams.defaultProfile;
 
+        ShardingState* const shardingState = ShardingState::get(txn);
+
         // It is possible that the sharding version will change during yield while we are
         // retrieving a plan executor. If this happens we will throw an error and mongos will
         // retry.
-        const ChunkVersion shardingVersionAtStart = shardingState.getVersion(nss.ns());
+        const ChunkVersion shardingVersionAtStart = shardingState->getVersion(nss.ns());
 
         // 3) Get the execution plan for the query.
         auto statusWithPlanExecutor =
@@ -236,24 +249,25 @@ public:
         if (!statusWithPlanExecutor.isOK()) {
             return appendCommandStatus(result, statusWithPlanExecutor.getStatus());
         }
+
         std::unique_ptr<PlanExecutor> exec = std::move(statusWithPlanExecutor.getValue());
 
         // TODO: Currently, chunk ranges are kept around until all ClientCursors created while
         // the chunk belonged on this node are gone. Separating chunk lifetime management from
         // ClientCursor should allow this check to go away.
-        if (!shardingState.getVersion(nss.ns()).isWriteCompatibleWith(shardingVersionAtStart)) {
+        if (!shardingState->getVersion(nss.ns()).isWriteCompatibleWith(shardingVersionAtStart)) {
             // Version changed while retrieving a PlanExecutor. Terminate the operation,
             // signaling that mongos should retry.
             throw SendStaleConfigException(nss.ns(),
                                            "version changed during find command",
                                            shardingVersionAtStart,
-                                           shardingState.getVersion(nss.ns()));
+                                           shardingState->getVersion(nss.ns()));
         }
 
         if (!collection) {
             // No collection. Just fill out curop indicating that there were zero results and
             // there is no ClientCursor id, and then return.
-            const int numResults = 0;
+            const long long numResults = 0;
             const CursorId cursorId = 0;
             endQueryOp(txn, *exec, dbProfilingLevel, numResults, cursorId);
             appendCursorResponseObject(cursorId, nss.ns(), BSONArray(), &result);
@@ -289,7 +303,7 @@ public:
         BSONArrayBuilder firstBatch;
         BSONObj obj;
         PlanExecutor::ExecState state;
-        int numResults = 0;
+        long long numResults = 0;
         while (!enoughForFirstBatch(pq, numResults, firstBatch.len()) &&
                PlanExecutor::ADVANCED == (state = cursorExec->getNext(&obj, NULL))) {
             // If adding this object will cause us to exceed the BSON size limit, then we stash
