@@ -353,15 +353,15 @@ tasks:
 - name: intel_library_test
   depends_on: []
   commands:
-    - func: "get buildnumber"
-    - func: "setup credentials"
-    - func: "build new tools" # noop if ${newtools} is not "true"
     - command: git.get_project
       params:
         directory: src
     - command: git.apply_patch
       params:
         directory: src
+    - func: "get buildnumber"
+    - func: "setup credentials"
+    - func: "build new tools" # noop if ${newtools} is not "true"
     - command: shell.exec
       params:
         working_dir: src
