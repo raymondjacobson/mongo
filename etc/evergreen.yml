@@ -263,7 +263,7 @@ tasks:
           set -o verbose
 
           rm -rf ${install_directory|/data/mongo-install-directory}
-          ${scons|scons} ${compile_flags|} --use-new-tools all dist dist-debugsymbols distsrc-${ext|tgz} ${msi_target|}
+          ${scons|scons} ${compile_flags|} --use-new-tools all dist dist-debugsymbols distsrc-${ext|tgz} ${msi_target|} intel_tests
 
           ${python|python} buildscripts/generate_compile_expansions.py version.json | \
             tee compile_expansions.yml
@@ -351,17 +351,10 @@ tasks:
 
 ## intel test ##
 - name: intel_library_test
-  depends_on: []
+  depends_on:
+    - name: compile
   commands:
-    - command: git.get_project
-      params:
-        directory: src
-    - command: git.apply_patch
-      params:
-        directory: src
-    - func: "get buildnumber"
-    - func: "setup credentials"
-    - func: "build new tools" # noop if ${newtools} is not "true"
+    - func: "do setup"
     - command: shell.exec
       params:
         working_dir: src
