@@ -347,7 +347,9 @@ test = env.Program('readtest',
     ['TESTS/readtest.c'],
     LIBDEPS=['intel_decimal128'])
 test_input = env.File('TESTS/readtest.in')
+AlwaysBuild(test_input)
 
 install_tests = env.Install('#build/third_party_tests/intel', [test, test_input])
+AlwaysBuild(install_tests)
 
 env.Alias('intel_tests', install_tests)
