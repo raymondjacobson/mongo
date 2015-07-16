@@ -418,7 +418,7 @@ TEST_F(Decimal128Test, TestDecimal128ToDoubleZero) {
 }
 
 TEST_F(Decimal128Test, TestDecimal128ToStringPos) {
-    std::string s = "2087.015E+281"; // +2087015E+278
+    std::string s = "2087.015E+281";  // +2087015E+278
     Decimal128 d(s);
     std::string result = d.toString();
     ASSERT_EQUALS(result, "2.087015E+284");
