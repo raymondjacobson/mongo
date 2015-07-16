@@ -325,7 +325,7 @@ if env.TargetOSIs('windows'):
 
     if processor == 'i386':
         extra_objects += [
-            float53_object('dpml_log2_t', 'dpml_log', ['LOG2P'])
+            float53_object('dpml_log2_t', 'dpml_log', ['LOG2'])
         ]
 
     files += extra_objects
