@@ -28,10 +28,9 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <utility>
-
-#include "mongo/platform/cstdint.h"
 
 namespace mongo {
 
