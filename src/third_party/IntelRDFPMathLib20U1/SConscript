@@ -274,9 +274,12 @@ processor = env['TARGET_ARCH']
 # Using 32 bit
 if processor == 'i386':
     cpp_defines['IA32'] = '1'
+    cpp_defines['ia32'] = '1'
+
 # Using 64 bit
 elif processor == 'x86_64':
     cpp_defines['efi2'] = '1'
+    cpp_defines['EFI2'] = '1'
 else:
     assert False, "Unsupported architecture: " + processor
 
@@ -322,7 +325,7 @@ if env.TargetOSIs('windows'):
 
     if processor == 'i386':
         extra_objects += [
-            float53_object('dpml_log2_t', 'dpml_log', ['LOG2P'])
+            float53_object('dpml_log2_t', 'dpml_log', ['LOG2'])
         ]
 
     files += extra_objects
