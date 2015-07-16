@@ -359,13 +359,24 @@ tasks:
     - command: git.apply_patch
       params:
         directory: src
+    - func: "get buildnumber"
+    - func: "setup credentials"
+    - func: "build new tools" # noop if ${newtools} is not "true"
     - command: shell.exec
       params:
         working_dir: src
         script: |
           set -o errexit
           set -o verbose
-          ${scons|scons} ${compile_flags|} intel_tests
+
+          rm -rf ${install_directory|/data/mongo-install-directory}
+    - command: shell.exec
+      params:
+        working_dir: src
+        script: |
+          set -o errexit
+          set -o verbose
+          ${scons|scons} ${compile_flags|} --use-new-tools intel_tests
     - command: shell.exec
       params:
         working_dir: src
