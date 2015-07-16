@@ -41,7 +41,7 @@
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_functions.h>
 #undef _WCHAR_T
 
-#include "mongo/platform/endian.h"
+#include "mongo/config.h"
 #include "mongo/util/assert_util.h"
 
 namespace mongo {
@@ -95,30 +95,23 @@ BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
     return value;
 }
 
-Decimal128::Decimal128Value::Decimal128Value() : high64(0), low64(0) {
-}
+Decimal128::Decimal128Value::Decimal128Value() : high64(0), low64(0) {}
 
 Decimal128::Decimal128Value::Decimal128Value(const Decimal128Value& dval)
-    : high64(dval.high64), low64(dval.low64) {
-}
+    : high64(dval.high64), low64(dval.low64) {}
 
 Decimal128::Decimal128Value::Decimal128Value(const unsigned long long dval[2])
-    : high64(static_cast<uint64_t>(dval[HIGH_64])), low64(static_cast<uint64_t>(dval[LOW_64])) {
-}
+    : high64(static_cast<uint64_t>(dval[HIGH_64])), low64(static_cast<uint64_t>(dval[LOW_64])) {}
 
-Decimal128::Decimal128() : _value() {
-}
+Decimal128::Decimal128() : _value() {}
 
-Decimal128::Decimal128(Decimal128::Decimal128Value dec128Value) : _value(dec128Value) {
-}
+Decimal128::Decimal128(Decimal128::Decimal128Value dec128Value) : _value(dec128Value) {}
 
 Decimal128::Decimal128(int32_t int32Value)
-    : _value(Decimal128Value(bid128_from_int32(int32Value).w)) {
-}
+    : _value(Decimal128Value(bid128_from_int32(int32Value).w)) {}
 
 Decimal128::Decimal128(int64_t int64Value)
-    : _value(Decimal128Value(bid128_from_int64(int64Value).w)) {
-}
+    : _value(Decimal128Value(bid128_from_int64(int64Value).w)) {}
 
 Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
     BID_UINT128 convertedDoubleValue;
@@ -237,8 +230,7 @@ Decimal128::Decimal128(std::string stringValue, RoundingMode roundMode) {
     _value = Decimal128Value(dec128.w);
 }
 
-Decimal128::~Decimal128() {
-}
+Decimal128::~Decimal128() {}
 
 const Decimal128::Decimal128Value Decimal128::getValue() const {
     return _value;
