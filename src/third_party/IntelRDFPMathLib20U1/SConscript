@@ -313,7 +313,7 @@ if env.TargetOSIs('windows'):
         float53_object('dpml_erfc_t', 'dpml_erf', [('ERFC', '1'),('BUILD_FILE_NAME', 'dpml_erf_t.h')]),
         float53_object('dpml_expm1_t', 'dpml_expm1', [('EXPM1', '1'),('USE_CONTROL87', '1')]),
         float53_object('dpml_exp10_t', 'dpml_exp', [('EXP10', '1'),('USE_CONTROL87', '1')]),
-        float53_object('dpml_exp2_t', 'dpml_exp', [('EXP2', '1'),('USE_CONTROL87', '1')]),
+        # float53_object('dpml_exp2_t', 'dpml_exp', [('EXP2', '1'),('USE_CONTROL87', '1')]),
         float53_object('dpml_lgamma_t', 'dpml_lgamma', [('DBUILD_FILE_NAME', 'dpml_lgamma_t.h'), ('DO_LGAMMA', '1'), ('HACK_GAMMA_INLINE', '0')]),
         float53_object('dpml_log1p_t', 'dpml_log', [('LOG1P', '1')]),
         float53_object('dpml_tgamma_t', 'dpml_tgamma', [('TGAMMA', '1')]),
