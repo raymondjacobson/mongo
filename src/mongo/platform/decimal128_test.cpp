@@ -74,7 +74,7 @@ TEST_F(Decimal128Test, TestInt32ConstructorZero) {
 }
 
 TEST_F(Decimal128Test, TestInt32ConstructorMax) {
-    int32_t intMax = 2147483647;
+    int32_t intMax = std::numeric_limits<int32_t>::max();
     Decimal128 d(intMax);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 000000007fffffff = +2147483647E+0
@@ -85,7 +85,7 @@ TEST_F(Decimal128Test, TestInt32ConstructorMax) {
 }
 
 TEST_F(Decimal128Test, TestInt32ConstructorMin) {
-    int32_t intMin = -2147483648;
+    int32_t intMin = std::numeric_limits<int32_t>::lowest();
     Decimal128 d(intMin);
     Decimal128::Decimal128Value val = d.getValue();
     // 0xb040000000000000 000000007fffffff = -2147483648E+0
@@ -107,7 +107,7 @@ TEST_F(Decimal128Test, TestInt64ConstructorZero) {
 }
 
 TEST_F(Decimal128Test, TestInt64ConstructorMax) {
-    int64_t longMax = LONG_MAX;
+    int64_t longMax = std::numeric_limits<int64_t>::max();
     Decimal128 d(longMax);
     Decimal128::Decimal128Value val = d.getValue();
     // 0x3040000000000000 7fffffffffffffff = +9223372036854775807E+0
@@ -118,7 +118,7 @@ TEST_F(Decimal128Test, TestInt64ConstructorMax) {
 }
 
 TEST_F(Decimal128Test, TestInt64ConstructorMin) {
-    int64_t longMin = LONG_MIN;
+    int64_t longMin = std::numeric_limits<int64_t>::lowest();
     Decimal128 d(longMin);
     Decimal128::Decimal128Value val = d.getValue();
     // 0xb040000000000000 8000000000000000 = -9223372036854775808E+0
