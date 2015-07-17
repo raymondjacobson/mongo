@@ -373,7 +373,7 @@ tasks:
 ## jstestfuzz ##
 - name: jstestfuzz
   depends_on:
-  - name: compile
+    - name: compile
   commands:
     - func: "do setup"
     - command: shell.exec
