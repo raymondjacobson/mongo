@@ -353,7 +353,7 @@ tasks:
 ## intel test ##
 - name: intel_library_test
   depends_on:
-    - name: compile
+  - name: compile
   commands:
     - func: "do setup"
     - command: shell.exec
