@@ -256,6 +256,8 @@ cpp_defines = {
     'USE_NATIVE_QUAD_TYPE': '0',
 }
 
+libs = []
+
 def removeIfPresent(lst, item):
     try:
         lst.remove(item)
@@ -275,6 +277,8 @@ def float53_object(target, source, extra_defines=None):
 if env.TargetOSIs('osx'):
     cpp_defines['LINUX'] = '1'
     cpp_defines['mach'] = '1'
+    # On some versions of osx, the log1p built-in function does not comply
+    # with the IEEE spec, so some intel tests pass. Use intel's log1p instead.
     extra_objects = [
         float53_object('dpml_log1p_t', 'dpml_log',
             [('LOG1P', '1'), ('efi2', '1'), ('EFI2', '1')])
@@ -285,6 +289,7 @@ if env.TargetOSIs('osx'):
 if env.TargetOSIs('linux') or env.TargetOSIs('solaris'):
     cpp_defines['LINUX'] = '1'
     cpp_defines['linux'] = '1'
+    libs.append('m')
 
 if env.TargetOSIs('freebsd') or env.TargetOSIs('openbsd'):
     cpp_defines['LINUX'] = '1'
@@ -356,6 +361,7 @@ for to_remove in ['-Werror', '-Wall', '-W']:
 
 test = env.Program('readtest',
     ['TESTS/readtest.c'],
+    LIBS=libs,
     LIBDEPS=['intel_decimal128'])
 test_input = env.File('TESTS/readtest.in')
 AlwaysBuild(test_input)
