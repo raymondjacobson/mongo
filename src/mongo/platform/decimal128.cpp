@@ -87,7 +87,7 @@ BID_UINT128 quantizeTo15DecimalDigits(BID_UINT128 value,
 Decimal128::Decimal128(int32_t int32Value)
     : _value(Decimal128Value(bid128_from_int32(int32Value).w)) {}
 
-Decimal128::Decimal128(int64_t int64Value)
+Decimal128::Decimal128(long long int64Value)
     : _value(Decimal128Value(bid128_from_int64(int64Value).w)) {}
 
 Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
