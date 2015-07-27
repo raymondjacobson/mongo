@@ -377,6 +377,11 @@ add_option('use-system-asio',
     nargs=0,
 )
 
+add_option('use-system-intel_decimal128',
+    help='use system version of intel decimal128',
+    nargs=0,
+)
+
 add_option('use-system-all',
     help='use all system libraries',
     nargs=0,
@@ -2146,6 +2151,9 @@ def doConfigure(myenv):
 
     if use_system_version_of_library("yaml"):
         conf.FindSysLibDep("yaml", ["yaml-cpp"])
+
+    if use_system_version_of_library("intel_decimal128"):
+        conf.FindSysLibDep("intel_decimal128", ["bid"])
 
     if wiredtiger and use_system_version_of_library("wiredtiger"):
         if not conf.CheckCXXHeader( "wiredtiger.h" ):
