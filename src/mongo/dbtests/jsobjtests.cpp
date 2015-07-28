@@ -712,6 +712,9 @@ struct AppendNumber {
         b.appendNumber("c", (1024LL * 1024 * 1024) - 1);
         b.appendNumber("d", (1024LL * 1024 * 1024 * 1024) - 1);
         b.appendNumber("e", 1024LL * 1024 * 1024 * 1024 * 1024 * 1024);
+        if (experimentalDecimalSupport) { 
+            b.appendNumber("f", mongo::Decimal128("1"));
+        }
 
         BSONObj o = b.obj();
         keyTest(o);
@@ -723,7 +726,6 @@ struct AppendNumber {
         ASSERT(o["e"].type() == NumberLong);
 
         if (experimentalDecimalSupport) { 
-            b.appendNumber("f", mongo::Decimal128("1"));
             ASSERT(o["f"].type() == NumberDecimal);
         }
     }

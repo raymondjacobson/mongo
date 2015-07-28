@@ -93,7 +93,7 @@ string BSONElement::jsonString(JsonStringFormat format, bool includeFieldNames, 
             break;
         case NumberDecimal:
             if (format == TenGen)
-                s << "NumberDecimal(";
+                s << "NumberDecimal(\"";
             else
                 s << "{ \"$numberDecimal\" : \"";
             // Recognize again that this is not valid JSON according to RFC-4627.
@@ -106,7 +106,7 @@ string BSONElement::jsonString(JsonStringFormat format, bool includeFieldNames, 
                 s << numberDecimal().toString();
             }
             if (format == TenGen)
-                s << ")";
+                s << "\")";
             else
                 s << "\" }";
             break;
