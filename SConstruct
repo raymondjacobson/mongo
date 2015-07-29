@@ -443,8 +443,9 @@ add_option('cache-dir',
 add_option("experimental-decimal-support",
     choices=['on', 'off'],
     default='off',
+    const='on',
     help="Enable experimental decimal128 type support",
-    nargs=1,
+    nargs='?',
 )
 
 def find_mongo_custom_variables():
