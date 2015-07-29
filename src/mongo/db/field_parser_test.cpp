@@ -32,7 +32,7 @@
 
 #include "mongo/db/field_parser.h"
 #include "mongo/db/jsobj.h"
-#include "mongo/platform/decimal128_knobs.h"
+#include "mongo/platform/decimal128.h"
 #include "mongo/unittest/unittest.h"
 #include "mongo/util/time_support.h"
 
