@@ -171,13 +171,12 @@ public:
     Decimal128(std::string stringValue, RoundingMode roundMode = kRoundTiesToEven);
 
     /**
-     * These functions get the inner Decimal128Value struct storing the decimal128 value.
-     * Const cast away for the mutable version of the function.
+     * This function gets the inner Decimal128Value struct storing a Decimal128 value.
      */
     Decimal128Value getValue() const;
 
     /**
-     * This function returns the decimal absolute value of the caller
+     * This function returns the decimal absolute value of the caller.
      */
     Decimal128 toAbs() const;
 

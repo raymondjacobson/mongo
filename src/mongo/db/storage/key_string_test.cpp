@@ -358,7 +358,7 @@ TEST(KeyStringTest, AllTypesRoundtrip) {
     for (int i = 1; i <= JSTypeMax; i++) {
         // TODO: Currently NumberDecimal does not support key string
         if (i == NumberDecimal)
-            break;
+            continue;
         {
             BSONObjBuilder b;
             b.appendMinForType("", i);
