@@ -39,7 +39,6 @@
 #include "mongo/db/matcher/expression.h"
 #include "mongo/db/matcher/expression_leaf.h"
 #include "mongo/platform/decimal128.h"
-#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/util/log.h"
 
 namespace mongo {

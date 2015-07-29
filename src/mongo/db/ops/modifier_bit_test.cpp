@@ -38,7 +38,6 @@
 #include "mongo/db/json.h"
 #include "mongo/db/ops/log_builder.h"
 #include "mongo/platform/decimal128.h"
-#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/unittest/unittest.h"
 
 namespace {

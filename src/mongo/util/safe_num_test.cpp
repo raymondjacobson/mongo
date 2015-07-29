@@ -33,7 +33,6 @@
 #include "mongo/bson/bsontypes.h"
 #include "mongo/bson/bsonobj.h"
 #include "mongo/platform/decimal128.h"
-#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/util/safe_num.h"
 #include "mongo/unittest/unittest.h"
 

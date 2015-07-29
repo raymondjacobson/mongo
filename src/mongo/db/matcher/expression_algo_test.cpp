@@ -37,7 +37,7 @@
 #include "mongo/db/matcher/expression.h"
 #include "mongo/db/matcher/expression_algo.h"
 #include "mongo/db/matcher/expression_parser.h"
-#include "mongo/platform/decimal128_knobs.h"
+#include "mongo/platform/decimal128.h"
 
 namespace mongo {
 
