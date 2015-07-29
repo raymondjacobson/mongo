@@ -414,6 +414,140 @@ TEST(Decimal128Test, TestDecimal128ToInt64Away) {
     }
 }
 
+TEST(Decimal128Test, TestDecimal128ToInt32ExactEven) {
+    std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
+    int32_t out[6] = {-3, -2, -2, 2, 2, 3};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toIntExact(), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt32ExactNeg) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
+    std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
+    int32_t out[6] = {-3, -3, -3, 2, 2, 2};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toIntExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt32ExactPos) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
+    std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
+    int32_t out[6] = {-2, -2, -2, 3, 3, 3};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toIntExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt32ExactZero) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
+    std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
+    int32_t out[6] = {-2, -2, -2, 2, 2, 2};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toIntExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt32ExactAway) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
+    std::string in[6] = {"-2.7", "-2.5", "-2.2", "2.2", "2.5", "2.7"};
+    int32_t out[6] = {-3, -3, -2, 2, 3, 3};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toIntExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt64ExactEven) {
+    std::string in[6] = {"-4294967296.7",
+                         "-4294967296.5",
+                         "-4294967296.2",
+                         "4294967296.2",
+                         "4294967296.5",
+                         "4294967296.7"};
+    int64_t out[6] = {-4294967297, -4294967296, -4294967296, 4294967296, 4294967296, 4294967297};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toLongExact(), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt64ExactNeg) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardNegative;
+    std::string in[6] = {"-4294967296.7",
+                         "-4294967296.5",
+                         "-4294967296.2",
+                         "4294967296.2",
+                         "4294967296.5",
+                         "4294967296.7"};
+    int64_t out[6] = {-4294967297, -4294967297, -4294967297, 4294967296, 4294967296, 4294967296};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toLongExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt64ExactPos) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardPositive;
+    std::string in[6] = {"-4294967296.7",
+                         "-4294967296.5",
+                         "-4294967296.2",
+                         "4294967296.2",
+                         "4294967296.5",
+                         "4294967296.7"};
+    int64_t out[6] = {-4294967296, -4294967296, -4294967296, 4294967297, 4294967297, 4294967297};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toLongExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt64ExactZero) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTowardZero;
+    std::string in[6] = {"-4294967296.7",
+                         "-4294967296.5",
+                         "-4294967296.2",
+                         "4294967296.2",
+                         "4294967296.5",
+                         "4294967296.7"};
+    int64_t out[6] = {-4294967296, -4294967296, -4294967296, 4294967296, 4294967296, 4294967296};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toLongExact(roundMode), out[testNo]);
+    }
+}
+
+TEST(Decimal128Test, TestDecimal128ToInt64ExactAway) {
+    Decimal128::RoundingMode roundMode = Decimal128::RoundingMode::kRoundTiesToAway;
+    std::string in[6] = {"-4294967296.7",
+                         "-4294967296.5",
+                         "-4294967296.2",
+                         "4294967296.2",
+                         "4294967296.5",
+                         "4294967296.7"};
+    int64_t out[6] = {-4294967297, -4294967297, -4294967296, 4294967296, 4294967297, 4294967297};
+    std::unique_ptr<Decimal128> decPtr;
+    for (int testNo = 0; testNo < 6; ++testNo) {
+        decPtr = stdx::make_unique<Decimal128>(in[testNo]);
+        ASSERT_EQUALS(decPtr->toLongExact(roundMode), out[testNo]);
+    }
+}
+
+
 TEST(Decimal128Test, TestDecimal128ToDoubleNormal) {
     std::string s = "+2.015";
     Decimal128 d(s);
@@ -687,17 +821,23 @@ TEST(Decimal128Test, TestDecimal128ToLongSignaling) {
 TEST(Decimal128Test, TestDecimal128ToIntExactSignaling) {
     Decimal128 d("10000000000000000");
     uint32_t sigFlags = Decimal128::SignalingFlag::kNoFlag;
-    int32_t intVal = d.toInt(&sigFlags);
+    int32_t intVal = d.toIntExact(&sigFlags);
     ASSERT_EQUALS(intVal, -std::numeric_limits<int32_t>::lowest());
-    ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInvalid));  // TODO
+    // TODO: The supported library does not set the kInexact flag even though
+    // the documentation claims to for exact integer conversions.
+    // ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInexact));
+    ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInvalid));
 }
 
 TEST(Decimal128Test, TestDecimal128ToLongExactSignaling) {
     Decimal128 d("100000000000000000000000000");
     uint32_t sigFlags = Decimal128::SignalingFlag::kNoFlag;
-    int64_t longVal = d.toLong(&sigFlags);
+    int64_t longVal = d.toLongExact(&sigFlags);
     ASSERT_EQUALS(longVal, -std::numeric_limits<int64_t>::lowest());
-    ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInvalid));  // TODO
+    // TODO: The supported library does not set the kInexact flag even though
+    // the documentation claims to for exact integer conversions.
+    // ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInexact));
+    ASSERT_TRUE(Decimal128::hasFlag(sigFlags, Decimal128::SignalingFlag::kInvalid));
 }
 
 TEST(Decimal128Test, TestDecimal128ToDoubleSignaling) {
