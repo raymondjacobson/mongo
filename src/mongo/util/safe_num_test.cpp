@@ -103,10 +103,12 @@ TEST(Comparison, StrictTypeComparison) {
     ASSERT_FALSE(one.isIdentical(oneLong));
     ASSERT_FALSE(oneLong.isIdentical(oneDouble));
     ASSERT_FALSE(oneDouble.isIdentical(one));
+    ASSERT_TRUE(oneDouble.isIdentical(oneDouble));
 
     if (mongo::experimentalDecimalSupport) {
         const SafeNum oneDecimal(Decimal128(1));
         ASSERT_FALSE(oneDecimal.isIdentical(one));
+        ASSERT_TRUE(oneDecimal.isIdentical(oneDecimal));
     }
 }
 
