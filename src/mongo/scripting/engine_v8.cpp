@@ -38,7 +38,7 @@
 #include "mongo/base/init.h"
 #include "mongo/db/operation_context.h"
 #include "mongo/db/service_context.h"
-#include "mongo/platform/decimal128_knobs.h"
+#include "mongo/platform/decimal128.h"
 #include "mongo/platform/unordered_set.h"
 #include "mongo/scripting/v8_db.h"
 #include "mongo/scripting/v8_utils.h"

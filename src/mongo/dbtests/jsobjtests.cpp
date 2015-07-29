@@ -42,7 +42,6 @@
 #include "mongo/db/storage/mmap_v1/btree/key.h"
 #include "mongo/dbtests/dbtests.h"
 #include "mongo/platform/decimal128.h"
-#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/util/allocator.h"
 #include "mongo/util/embedded_builder.h"
 #include "mongo/util/log.h"

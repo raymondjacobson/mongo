@@ -39,7 +39,6 @@
 #include "mongo/db/json.h"
 #include "mongo/dbtests/dbtests.h"
 #include "mongo/platform/decimal128.h"
-#include "mongo/platform/decimal128_knobs.h"
 #include "mongo/util/log.h"
 
 
