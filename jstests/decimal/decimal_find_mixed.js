@@ -59,8 +59,8 @@
       { "a" : 0.3 }
     ], "2 insertion failed"));
 
-    assert.eq(col.find({ "a" : { $gt : NumberDecimal("0.3") }}).count(), 1, "D1");
-    assert.eq(col.find({ "a" : { $lt : 0.3 }}).count(), 1, "D1");
+    assert.eq(col.find({ "a" : { $lt : NumberDecimal("0.3") }}).count(), 1, "D1");
+    assert.eq(col.find({ "a" : { $gt : 0.3 }}).count(), 1, "D1");
 
     // Find with NumberLong, but not Double
     col.drop();
