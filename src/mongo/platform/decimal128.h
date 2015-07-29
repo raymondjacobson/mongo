@@ -1,4 +1,4 @@
-/*    Copyright 2014 MongoDB Inc.
+/*    Copyright 2015 MongoDB Inc.
  *
  *    This program is free software: you can redistribute it and/or  modify
  *    it under the terms of the GNU Affero General Public License, version 3,
@@ -32,7 +32,19 @@
 #include <string>
 #include <utility>
 
+#include "mongo/config.h"
+
 namespace mongo {
+
+/**
+ * This boolean is used as a master switch to enable and disable decimal support
+ * and is set by the build flag --experimental-decimal-support.
+ */
+#ifdef MONGO_CONFIG_EXPERIMENTAL_DECIMAL_SUPPORT
+const bool experimentalDecimalSupport = true;
+#else
+const bool experimentalDecimalSupport = false;
+#endif
 
 /**
  * Wrapper class for the MongoDB Decimal128 data type. Sample usage:
