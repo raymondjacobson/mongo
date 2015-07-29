@@ -17,6 +17,7 @@
         { "decimal" : NumberDecimal("12345678901234567890.12345678901234") },
         { "decimal" : NumberDecimal("NaN") },
         { "decimal" : NumberDecimal("-NaN") },
+        { "decimal" : NumberDecimal("-Infinity") },
         { "decimal" : NumberDecimal("Infinity") },
     ]), "Initial insertion of decimals failed");
 
@@ -26,12 +27,9 @@
     // NaNs
     assert.eq(col.find({ "decimal" : NumberDecimal("NaN") }).count(), 2, "NaN find failed");
 
-    var theNaNs = col.find({ "decimal": NumberDecimal("NaN")});
-    assert(bsonWoCompare(theNaNs[0].decimal, NumberDecimal("NaN")) == 0, "NaN compares equal");
-    assert(bsonWoCompare(theNaNs[1].decimal, NumberDecimal("NaN")) == 0, "NaN compares equal");
+    assert(bsonWoCompare(theNaNs[0], theNaNs[1]) == 0, "NaN compares equal");
 
     // Infinity
-    assert.writeOK(col.insert({ "decimal" : NumberDecimal("-Infinity")}), "Infinity write failed");
     assert.eq(col.find({ "decimal" : NumberDecimal("Infinity") }).count(), 1,
               "Infinity count wrong");
     assert.eq(col.find({ "decimal" : NumberDecimal("-Infinity") }).count(), 1,
@@ -40,7 +38,7 @@
     // Maximum Precision
     assert.eq(
         col.find({ "decimal" : NumberDecimal("12345678901234567890.12345678901234") }).count(), 1,
-        "precision missing");
+        "Maximum precision decimal not found.");
 
     col.drop();
 
