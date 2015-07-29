@@ -109,13 +109,8 @@ inline int compareDoubleToLong(double lhs, long long rhs) {
  * 1. decimal and decimal: directly compare (enforce ordering: NaN < -Inf < N < +Inf)
  * 2. decimal and int: convert int to decimal and compare
  * 3. decimal and long: convert long to decimal and compare
- *
- * TODO: Case 4 is incorrect behavior and fails on transitivity of operations
- * as the 15-digit quantize would allow double(0.10000000000000000555) and
- * double(0.999999999999999876) to compare equal to decimal(0.1) despite being unequal.
- *
- * 4. decimal to double: convert double to decimal (maintaining only 15 decimal
- *    digits of precision as specified in mongo/platform/decimal128.h) and compare
+ * 4. decimal to double: convert decimal to double with round toward negative.
+ *    Check for exact conversion and determine ordering based on result.
  */
 
 // Case 1: Compare two decimal values, but enforce MongoDB's total ordering convention
@@ -138,6 +133,7 @@ inline int compareDecimals(Decimal128 lhs, Decimal128 rhs) {
 inline int compareDecimals(Decimal128 lhs, int rhs) {
     return compareDecimals(lhs, Decimal128(rhs));
 }
+
 inline int compareDecimals(int lhs, Decimal128 rhs) {
     return -compareDecimals(rhs, Decimal128(lhs));
 }
@@ -146,6 +142,7 @@ inline int compareDecimals(int lhs, Decimal128 rhs) {
 inline int compareDecimals(Decimal128 lhs, long long rhs) {
     return compareDecimals(lhs, Decimal128(rhs));
 }
+
 inline int compareDecimals(long long lhs, Decimal128 rhs) {
     return -compareDecimals(rhs, Decimal128(lhs));
 }
@@ -174,6 +171,7 @@ inline int compareDecimals(Decimal128 lhs, double rhs) {
     invariant(std::isnan(rhs));
     return 1;
 }
+
 inline int compareDecimals(double lhs, Decimal128 rhs) {
     return -compareDecimals(rhs, Decimal128(lhs));
 }
