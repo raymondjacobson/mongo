@@ -1,8 +1,8 @@
 db.doubleBank.drop();
 
-var initialBalance = 2000000000;
+var initialBalance = 20000000000;
 var toDong = 21819.00;
-var fromDong = 0.000046;
+var fromDong = 0.0000461;
 
 db.doubleBank.insert({
 	balance : initialBalance 
@@ -19,9 +19,9 @@ Math.seededRandom = function(max, min) {
     return min + rnd * (max - min);
 }
 
-var iterations = 10000;
+var iterations = 500;
 for (var i = 0; i < iterations; ++i) {
-	var transactionAmount = Math.seededRandom()*1000000;
+	var transactionAmount = Math.seededRandom()*10000000;
 	var direction = (Math.seededRandom() > 0.5 ? 1 : -1);
 	transactionAmount *= direction;
 

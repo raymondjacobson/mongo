@@ -33,7 +33,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <iostream>
 // _WCHAR_T is a built-in in C++, so we don't want the included C code to typedef it.
 #define _WCHAR_T
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
@@ -218,7 +217,6 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
         _value = libraryTypeToDecimal128Value(
             quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
     }
-    std::cout << Decimal128(_value).toString() << std::endl;
     invariant(_value.low64 >= 100000000000000ull && _value.low64 <= 999999999999999ull);
 }
 
