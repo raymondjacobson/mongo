@@ -33,6 +33,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <iostream>
 // _WCHAR_T is a built-in in C++, so we don't want the included C code to typedef it.
 #define _WCHAR_T
 #include <third_party/IntelRDFPMathLib20U1/LIBRARY/src/bid_conf.h>
@@ -186,7 +187,9 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
      * section, which leaves the value unchanged.
      */
     if (base10Exp > 0)
-        base10Exp += 2;
+        base10Exp += 1;
+    else
+        base10Exp -= 1;
 
     _value = libraryTypeToDecimal128Value(
         quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
@@ -204,6 +207,18 @@ Decimal128::Decimal128(double doubleValue, RoundingMode roundMode) {
         _value = libraryTypeToDecimal128Value(
             quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
     }
+    if (_value.low64 < 100000000000000ull || _value.low64 > 999999999999999ull) {
+        // If we didn't precisely get 15 digits of precision, the original base 10 exponent
+        // guess was 1 off (see comment above), so quantize once more with magnitude - 1
+        if (base10Exp > 0)
+            base10Exp--;
+        else
+            base10Exp++;
+
+        _value = libraryTypeToDecimal128Value(
+            quantizeTo15DecimalDigits(convertedDoubleValue, roundMode, base10Exp, &throwAwayFlag));
+    }
+    std::cout << Decimal128(_value).toString() << std::endl;
     invariant(_value.low64 >= 100000000000000ull && _value.low64 <= 999999999999999ull);
 }
 

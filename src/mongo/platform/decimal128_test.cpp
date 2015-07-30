@@ -154,6 +154,18 @@ TEST(Decimal128Test, TestDoubleConstructorQuant7) {
     ASSERT_TRUE(d.isEqual(e));
 }
 
+TEST(Decimal128Test, TestDoubleConstructorQuant8) {  
+    double dbl = 724.8799725651578000906738452613353729248046875;
+    Decimal128 d(dbl);
+    ASSERT_FALSE(d.isZero()); // TODO: temporary
+}
+
+TEST(Decimal128Test, TestDoubleConstructorQuant9) {  
+    double dbl = -0.09645061728395;
+    Decimal128 d(dbl);
+    ASSERT_FALSE(d.isZero()); // TODO: temporary
+}
+
 TEST(Decimal128Test, TestDoubleConstructorQuantFailPoorLog10Of2Estimate) {
     double dbl = exp2(1000);
     Decimal128 d(dbl);
