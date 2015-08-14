@@ -45,6 +45,10 @@ void BsonTemplateEvaluator::initializeEvaluator() {
     addOperator("RAND_STRING", &BsonTemplateEvaluator::evalRandString);
     addOperator("CONCAT", &BsonTemplateEvaluator::evalConcat);
     addOperator("OID", &BsonTemplateEvaluator::evalObjId);
+    addOperator("NUMBER_INT", &BsonTemplateEvaluator::evalNumberInt);
+    addOperator("NUMBER_LONG", &BsonTemplateEvaluator::evalNumberLong);
+    addOperator("NUMBER_DOUBLE", &BsonTemplateEvaluator::evalNumberDouble);
+    addOperator("NUMBER_DECIMAL", &BsonTemplateEvaluator::evalNumberDecimal);
     addOperator("VARIABLE", &BsonTemplateEvaluator::evalVariable);
 }
 
@@ -310,6 +314,50 @@ BsonTemplateEvaluator::Status BsonTemplateEvaluator::evalObjId(BsonTemplateEvalu
         // Error: must be generating a value for the _id field.
         return StatusOpEvaluationError;
     out.genOID();
+    return StatusSuccess;
+}
+
+BsonTemplateEvaluator::Status BsonTemplateEvaluator::evalNumberInt(BsonTemplateEvaluator* btl,
+                                                                   const char* fieldName,
+                                                                   const BSONObj& in,
+                                                                   BSONObjBuilder& out) {
+    // in = { #NUMBER_INT: 1 }
+    int int32 = in.firstElement().numberInt();
+
+    out.append(fieldName, int32);
+    return StatusSuccess;
+}
+
+BsonTemplateEvaluator::Status BsonTemplateEvaluator::evalNumberLong(BsonTemplateEvaluator* btl,
+                                                                    const char* fieldName,
+                                                                    const BSONObj& in,
+                                                                    BSONObjBuilder& out) {
+    // in = { #NUMBER_LONG: 1 }
+    long long int64 = in.firstElement().numberLong();
+
+    out.append(fieldName, int64);
+    return StatusSuccess;
+}
+
+BsonTemplateEvaluator::Status BsonTemplateEvaluator::evalNumberDouble(BsonTemplateEvaluator* btl,
+                                                                      const char* fieldName,
+                                                                      const BSONObj& in,
+                                                                      BSONObjBuilder& out) {
+    // in = { #NUMBER_DOUBLE: 1 }
+    double dbl = in.firstElement().numberDouble();
+
+    out.append(fieldName, dbl);
+    return StatusSuccess;
+}
+
+BsonTemplateEvaluator::Status BsonTemplateEvaluator::evalNumberDecimal(BsonTemplateEvaluator* btl,
+                                                                       const char* fieldName,
+                                                                       const BSONObj& in,
+                                                                       BSONObjBuilder& out) {
+    // in = { #NUMBER_DECIMAL: 1 }
+    Decimal128 decimal = in.firstElement().numberDecimal();
+
+    out.append(fieldName, decimal);
     return StatusSuccess;
 }
 

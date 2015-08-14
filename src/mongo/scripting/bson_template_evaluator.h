@@ -244,6 +244,38 @@ private:
                             BSONObjBuilder& out);
 
     /*
+     * Operator method to support #NUMBER_INT : { a : { #NUMBER_INT: 1 } }
+     */
+    static Status evalNumberInt(BsonTemplateEvaluator* btl,
+                                const char* fieldName,
+                                const BSONObj& in,
+                                BSONObjBuilder& out);
+
+    /*
+     * Operator method to support #NUMBER_LONG : { a : { #NUMBER_LONG: 1 } }
+     */
+    static Status evalNumberLong(BsonTemplateEvaluator* btl,
+                                 const char* fieldName,
+                                 const BSONObj& in,
+                                 BSONObjBuilder& out);
+
+    /*
+     * Operator method to support #NUMBER_DOUBLE : { a : { #NUMBER_DOUBLE: 1 } }
+     */
+    static Status evalNumberDouble(BsonTemplateEvaluator* btl,
+                                   const char* fieldName,
+                                   const BSONObj& in,
+                                   BSONObjBuilder& out);
+
+    /*
+     * Operator method to support #NUMBER_DECIMAL : { a : { #NUMBER_DECIMAL: 1 } }
+     */
+    static Status evalNumberDecimal(BsonTemplateEvaluator* btl,
+                                    const char* fieldName,
+                                    const BSONObj& in,
+                                    BSONObjBuilder& out);
+
+    /*
      * Operator method to support variables: {_id: { #VARIABLE: "x" } }
      *
      */
